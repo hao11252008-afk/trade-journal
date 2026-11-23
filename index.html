@@ -1,0 +1,884 @@
+<!doctype html>
+<html lang="zh">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Trade Journal</title>
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#0b0d10">
+<link rel="icon" type="image/png" href="icon-192.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="交易日志">
+<style>
+:root{
+  --bg:#0b0d10;--card:#13161b;--card2:#191d23;--line:#252a32;--text:#e6e8eb;--muted:#8a919c;
+  --green:#3ddc97;--green-bg:rgba(61,220,151,.10);--red:#ef5a5a;--red-bg:rgba(239,90,90,.10);
+  --be:#a3abb6;--be-bg:rgba(163,171,182,.08);--gold:#f5c451;--accent:#3ddc97;
+  --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font:14px/1.45 -apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif}
+button,input,select,textarea{font:inherit;color:inherit}
+.mono{font-family:var(--mono)}
+.pos{color:var(--green)}.neg{color:var(--red)}.zero{color:var(--be)}.muted{color:var(--muted)}
+.top{position:sticky;top:0;z-index:5;display:flex;align-items:center;gap:12px;padding:12px 24px;background:rgba(11,13,16,.92);backdrop-filter:blur(6px);border-bottom:1px solid var(--line);flex-wrap:wrap}
+.layout{display:flex;min-height:100vh}
+.side{width:224px;flex:none;position:sticky;top:0;height:100vh;background:#0e1114;border-right:1px solid var(--line);padding:18px 12px;display:flex;flex-direction:column;gap:4px}
+.content{flex:1;min-width:0}
+.brand{font-weight:700;letter-spacing:.08em;font-size:15px;padding:4px 10px 18px;margin-bottom:6px;border-bottom:1px solid var(--line)}
+.nav{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:8px;color:var(--muted);cursor:pointer}
+.nav svg{width:18px;height:18px;flex:none}
+.nav:hover{background:#151920;color:var(--text)}
+.nav.on{background:#1b2028;color:var(--text);box-shadow:inset 3px 0 0 var(--accent)}
+.beta{font-size:9px;letter-spacing:.1em;font-weight:700;color:var(--gold);border:1px solid rgba(245,196,81,.5);border-radius:4px;padding:1px 5px;margin-left:auto}
+.page-title .beta{margin-left:6px;vertical-align:middle}
+.page-title{font-size:16px;font-weight:700;margin-right:auto;display:flex;align-items:center}
+.filters{display:flex;flex-wrap:wrap;gap:14px;align-items:center}
+.filters label{display:flex;align-items:center;gap:8px;color:var(--muted);font-size:12px}
+.fsum{margin-left:auto;display:flex;gap:18px;font-size:12px;color:var(--muted)}
+.fsum b{font-family:var(--mono);font-size:14px;color:var(--text)}
+.fsum b.pos{color:var(--green)}.fsum b.neg{color:var(--red)}
+tr.trow{cursor:pointer}tr.trow:hover td{background:#171b21}
+.nowrap{white-space:nowrap}
+.tscroll{overflow-x:auto}
+tr.zero-n td{opacity:.45}
+tr.zero-n td:last-child{opacity:1}
+.lown{font-family:inherit;font-size:10px;color:var(--gold);border:1px solid rgba(245,196,81,.4);border-radius:4px;padding:0 5px;margin-left:4px;vertical-align:middle}
+.rm-an{color:var(--muted)}.rm-an:hover{color:var(--red)}
+.rbar{height:8px;background:#1a1e24;border-radius:4px;overflow:hidden}
+.rbar div{height:100%;border-radius:4px}.rbar .p{background:var(--green)}.rbar .n{background:var(--red)}
+.brand small{display:block;font-weight:400;letter-spacing:0;color:var(--muted);font-size:12px}
+main{max-width:1400px;margin:0 auto;padding:20px 24px 60px;display:grid;gap:16px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:16px}
+.card h3{margin:0 0 12px;font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);font-weight:700}
+.btn{background:var(--card2);border:1px solid var(--line);border-radius:8px;padding:7px 12px;cursor:pointer}
+.btn:hover{border-color:#3a414c}
+.btn.primary{background:var(--accent);color:#06140d;border-color:var(--accent);font-weight:700}
+.btn.danger{color:var(--red)}
+.btn.sm{padding:4px 9px;font-size:12px}
+select.btn{padding-right:28px}
+.seg{display:inline-flex;background:var(--card2);border:1px solid var(--line);border-radius:8px;padding:2px}
+.seg button{background:none;border:0;padding:5px 12px;border-radius:6px;cursor:pointer;color:var(--muted)}
+.seg button.on{background:#2a3039;color:var(--text);font-weight:600}
+.bar{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.bar .label{min-width:170px;text-align:center;font-weight:600}
+.banner{background:rgba(245,196,81,.08);border:1px solid rgba(245,196,81,.3);color:var(--gold);border-radius:10px;padding:10px 14px;display:flex;gap:12px;align-items:center}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+.stat{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px 16px}
+.stat .k{font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);font-weight:700}
+.stat .v{font-size:22px;font-weight:700;margin-top:4px;font-family:var(--mono)}
+.stat .s{font-size:12px;color:var(--muted);margin-top:2px}
+.acctinfo{display:flex;gap:24px;flex-wrap:wrap;font-size:13px}
+.acctinfo b{font-family:var(--mono)}
+/* calendar */
+.cal{display:grid;grid-template-columns:repeat(7,1fr) 110px;gap:6px}
+.cal .hd{font-size:11px;letter-spacing:.1em;color:var(--muted);text-align:center;padding:6px 0;font-weight:700}
+.cal .cell{min-height:84px;background:#0f1216;border:1px solid var(--line);border-radius:8px;padding:6px;text-align:center;display:flex;flex-direction:column;align-items:center;gap:2px}
+.cal .cell.empty{background:transparent;border-color:transparent}
+.cal .cell.has{cursor:pointer}
+.cal .cell.has:hover{filter:brightness(1.25)}
+.cal .cell.w{background:var(--green-bg);border-color:rgba(61,220,151,.45)}
+.cal .cell.l{background:var(--red-bg);border-color:rgba(239,90,90,.45)}
+.cal .cell.b{background:var(--be-bg);border-color:rgba(163,171,182,.35)}
+.cal .cell.today{box-shadow:inset 0 0 0 1.5px #5b8def}
+.cal .cell.today .dn{color:#7aa7ff}
+.cal .dn{font-weight:700}
+.cal .pv{font-family:var(--mono);font-weight:700;font-size:15px}
+.cal .wr{font-family:var(--mono);font-size:11px;opacity:.85}
+.cal .wk{background:var(--card2)}
+/* table */
+table{width:100%;border-collapse:collapse}
+th{font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);text-align:left;padding:10px;border-bottom:1px solid var(--line);font-weight:700}
+td{padding:10px;border-bottom:1px solid var(--line);vertical-align:middle}
+tr.day{cursor:pointer}
+tr.day:hover td{background:#171b21}
+tr.sub td{background:#0f1216;font-size:13px;cursor:pointer}
+tr.sub:hover td{background:#141820}
+.badge{display:inline-block;padding:2px 8px;border-radius:6px;font-family:var(--mono);font-size:12px;border:1px solid}
+.badge.w{color:var(--green);border-color:rgba(61,220,151,.45);background:var(--green-bg)}
+.badge.l{color:var(--red);border-color:rgba(239,90,90,.45);background:var(--red-bg)}
+.badge.b{color:var(--be);border-color:rgba(163,171,182,.35);background:var(--be-bg)}
+.sym{display:inline-block;background:#222730;border:1px solid #2f3540;border-radius:5px;padding:1px 7px;font-family:var(--mono);font-size:12px;margin-right:4px}
+.chip{display:inline-block;padding:3px 10px;border-radius:999px;border:1px solid var(--line);background:var(--card2);font-size:12px;margin:2px 4px 2px 0;cursor:pointer;user-select:none}
+.chip.on{background:rgba(61,220,151,.14);border-color:rgba(61,220,151,.6);color:var(--green)}
+.chip.static{cursor:default}
+.dir{font-size:12px;font-weight:700}
+.dir.long{color:var(--green)}.dir.short{color:var(--red)}
+/* stars */
+.stars{position:relative;display:inline-block;width:110px;height:22px;vertical-align:middle}
+.stars.sm{width:70px;height:14px}
+.stars .row{position:absolute;inset:0;display:flex}
+.stars .row svg{width:22px;height:22px;flex:none}
+.stars.sm .row svg{width:14px;height:14px}
+.stars .fg{overflow:hidden;white-space:nowrap}
+.stars.input{cursor:pointer}
+/* modal */
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,.66);z-index:20;display:flex;align-items:flex-start;justify-content:center;padding:40px 16px;overflow:auto}
+.modal{background:var(--card);border:1px solid var(--line);border-radius:14px;width:100%;max-width:860px;padding:20px 22px}
+.modal.wide{max-width:980px}
+.modal h2{margin:0 0 16px;font-size:18px;display:flex;align-items:center;gap:10px}
+.modal h2 .x{margin-left:auto}
+.grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+.grid .span2{grid-column:span 2}.grid .span4{grid-column:span 4}
+.f label{display:block;font-size:12px;color:var(--muted);margin-bottom:4px}
+.f input,.f select,.f textarea{width:100%;background:#0f1216;border:1px solid var(--line);border-radius:8px;padding:8px 10px;outline:none}
+.f input:focus,.f select:focus,.f textarea:focus{border-color:#4a5260}
+.f textarea{min-height:120px;resize:vertical}
+.tbox{display:flex;align-items:center;background:#0f1216;border:1px solid var(--line);border-radius:8px;padding:0 10px;cursor:text}
+.tbox:focus-within{border-color:#4a5260}
+.f .tbox input{width:2.4ch;border:0;background:none;padding:8px 0;text-align:center;border-radius:0}
+.tbox span{color:var(--muted);padding:0 2px}
+.preview{display:flex;gap:22px;flex-wrap:wrap;background:#0f1216;border:1px solid var(--line);border-radius:10px;padding:12px 14px}
+.preview div span{display:block;font-size:11px;color:var(--muted);letter-spacing:.06em}
+.preview div b{font-family:var(--mono);font-size:16px}
+.drop{border:1.5px dashed #343b46;border-radius:10px;padding:16px;text-align:center;color:var(--muted);cursor:pointer}
+.drop.hover{border-color:var(--accent);color:var(--accent)}
+.thumbs{display:flex;flex-wrap:wrap;gap:10px;margin-top:10px}
+.thumb{position:relative;width:150px;height:96px;border-radius:8px;overflow:hidden;border:1px solid var(--line);background:#0f1216}
+.thumb img{width:100%;height:100%;object-fit:cover;cursor:zoom-in}
+.thumb .rm{position:absolute;top:4px;right:4px;background:rgba(0,0,0,.7);border:0;border-radius:6px;color:#fff;cursor:pointer;padding:0 7px}
+.gallery{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:10px}
+.gallery img{width:100%;border-radius:8px;border:1px solid var(--line);cursor:zoom-in;display:block}
+.notes{white-space:pre-wrap;background:#0f1216;border:1px solid var(--line);border-radius:10px;padding:12px 14px;min-height:40px}
+.kv{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:14px}
+.kv div{background:#0f1216;border:1px solid var(--line);border-radius:10px;padding:10px 12px}
+.kv span{display:block;font-size:11px;color:var(--muted)}
+.kv b{font-family:var(--mono)}
+.tcard{display:flex;gap:14px;align-items:center;background:#0f1216;border:1px solid var(--line);border-radius:10px;padding:10px;margin-bottom:8px;cursor:pointer}
+.tcard:hover{border-color:#3a414c}
+.tcard .tb{width:120px;height:72px;border-radius:6px;object-fit:cover;background:#1a1e24;flex:none}
+.tcard .mid{flex:1;min-width:0}
+.lightbox{position:fixed;inset:0;background:rgba(0,0,0,.92);z-index:40;display:flex;align-items:center;justify-content:center;cursor:zoom-out}
+.lightbox img{max-width:96vw;max-height:94vh}
+.foot{display:flex;gap:10px;justify-content:flex-end;margin-top:18px}
+.sec{margin-top:18px}
+.sec h4{margin:0 0 8px;font-size:12px;color:var(--muted);letter-spacing:.08em;text-transform:uppercase}
+.list-row{display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--line)}
+.empty-msg{color:var(--muted);text-align:center;padding:30px}
+/* monthly performance */
+.pbars{display:flex;gap:8px;align-items:stretch}
+.pbar{flex:1;display:flex;flex-direction:column;cursor:pointer;min-width:0}
+.pbar:hover .pfill{filter:brightness(1.25)}
+.pup{display:flex;align-items:flex-end;border-bottom:1px solid #4a5260}.pdn{display:flex;align-items:flex-start}
+.pfill{width:100%;border-radius:4px 4px 0 0}.pfill.p{background:var(--green)}.pfill.n{background:var(--red);border-radius:0 0 4px 4px}
+.pfill.grow{animation:growUp .7s cubic-bezier(.22,1,.36,1) both;transform-origin:bottom}.pdn .pfill.grow{transform-origin:top}
+@keyframes growUp{from{transform:scaleY(0)}to{transform:scaleY(1)}}
+.plab{text-align:center;font-size:11px;color:var(--muted);margin-top:6px;white-space:nowrap}
+.pgrid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+.pcard{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px 16px;cursor:pointer;min-height:118px}
+.pcard:hover{filter:brightness(1.2)}
+.pcard.w{background:var(--green-bg);border-color:rgba(61,220,151,.45)}.pcard.l{background:var(--red-bg);border-color:rgba(239,90,90,.45)}.pcard.b{background:var(--be-bg)}
+.pcard.fut{opacity:.45;cursor:default}.pcard.fut:hover{filter:none}
+.pcard.cur{box-shadow:inset 0 0 0 1.5px #5b8def}
+.pcard.pin{animation:fadeIn .42s ease-out both}
+.pcard .pm{font-weight:700;margin-bottom:6px}.pcard .pv{font-family:var(--mono);font-size:20px;font-weight:700}
+.ppct{font-family:var(--mono);font-size:13px;margin-top:2px}.pmeta{font-size:12px;color:var(--muted);margin-top:6px}.pempty{color:var(--muted);font-size:13px;margin-top:14px}
+.ytab th,.ytab td{text-align:center;padding:8px 6px;font-size:12px}.ytab th:first-child,.ytab td:first-child{text-align:left}
+.ycell{cursor:pointer}.ycell:hover{background:#171b21}.ypct{font-size:10px;opacity:.75}
+.ytab tr.ysel td{background:#151a21}.ytab a{color:inherit}
+@keyframes fadeIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+#app.fade{animation:fadeIn .38s ease-out}
+.cal.anim .cell{opacity:0;animation:fadeIn .42s ease-out forwards}
+@media (prefers-reduced-motion:reduce){#app.fade,.cal.anim .cell,.pcard.pin,.pfill.grow{animation:none;opacity:1}}
+svg text{fill:var(--muted);font-size:11px;font-family:var(--mono)}
+@media (max-width:760px){
+  .top,main{padding-left:16px;padding-right:16px}
+  .layout{flex-direction:column}.side{width:auto;height:auto;position:static;flex-direction:row;flex-wrap:wrap;align-items:center}
+  .side .brand{border:0;padding:4px 10px;margin:0}.side>div[style]{display:none}.fsum{margin-left:0}
+  .cal{grid-template-columns:repeat(7,1fr)}.cal .wk,.cal .wkh{display:none}
+  .grid,.kv{grid-template-columns:repeat(2,1fr)}.grid .span4{grid-column:span 2}
+  .hide-sm{display:none}
+  .stats{grid-template-columns:repeat(2,1fr)}
+  .pgrid{grid-template-columns:repeat(2,1fr)}
+}
+</style>
+</head>
+<body>
+<div class="layout"><aside class="side" id="side"></aside><div class="content"><header class="top" id="top"></header>
+<main id="app"></main></div></div>
+<div id="modal-root"></div>
+<input type="file" id="file-img" accept="image/*" multiple hidden>
+<input type="file" id="file-import" accept="application/json,.json" hidden>
+<script>
+'use strict';
+/* ---------- constants ---------- */
+const SYMBOLS={MNQ:2,NQ:20,MES:5,ES:50,MYM:0.5,YM:5,M2K:5,RTY:50,MGC:10,GC:100,MCL:100,CL:1000};
+const BUILTIN_TAGS=[['on_plan','按计划','On plan'],['off_plan','偏离计划','Off plan'],['focused','专注','Focused'],['calm','冷静','Calm'],['confident','自信','Confident'],['fomo','FOMO','FOMO'],['greedy','贪婪','Greedy'],['revenge','报复','Revenge']];
+const I18N={
+zh:{appSub:'交易日志',perf:'月度绩效',months:['1月','2月','3月','4月','5月','6月','7月','8月','9月','10月','11月','12月'],yearNet:'全年净盈亏',profitMonths:'盈利月份',bestMonth:'最好的月份',worstMonth:'最差的月份',noTradesMonth:'没有交易',future:'还没到',multiYear:'多年对照',fullYear:'全年',tradesUnit:'笔',addAnTag:'+ 添加标签',lowN:'样本少',tagPerf:'标签表现',expectancy:'期望值（R / 笔）',noAnTags:'还没选标签。点右上角「+ 添加标签」，例如 V1.0、V2.0、V3.0、FOMO、报复。',anHint:'期望值 = 平均每笔赚几 R，正数代表长期赚钱，负数代表长期亏钱。一笔交易有多个标签时会同时算进每个标签，所以各行加起来不等于总数。标「样本少」的标签少于 20 笔：数据还不够，先别下结论。',streaks:'最长连胜 / 最长连亏',curStreak:'目前',winStreak:'连胜',lossStreak:'连亏',overview:'总览',historyNav:'交易历史',analysis:'分析',recent:'最近 15 笔',viewAll:'查看全部 →',maxWin:'最大单笔盈利',maxLoss:'最大单笔亏损',any:'全部',price:'价格',reset:'清除筛选',model:'模型',avgR:'平均 R',totalR:'总 R',modelTitle:'模型表现',noModel:'未标模型',
+modelHint:'统计名称以 V 开头的标签（例如 V1.0、V2.0、V3.0），跟着上面选的时间范围和账户。少于 20 笔的分组以淡色显示：样本还不够，先别下结论。',noModelTags:'还没有 V 开头的标签。在交易里加上 V1.0、V2.0、V3.0 标签，这里就会出现统计。',newTrade:'+ 新交易',allAccounts:'全部账户',settings:'设置',all:'全部',year:'年',month:'月',week:'周',day:'日',
+netPnl:'净盈亏',winRate:'胜率',exclBE:'不含保本',inclBE:'含保本',trades:'交易数',wbl:'盈利 / 保本 / 亏损',avgWin:'平均盈利',avgLoss:'平均亏损',pf:'盈亏因子',avgDur:'平均持仓',avgRating:'平均评分',
+equity:'成长曲线',calendar:'交易日历',history:'交易历史',weekTotal:'周合计',date:'日期',symbol:'品种',count:'笔数',duration:'持仓时间',win:'胜率',noTrades:'这段时间没有交易',
+account:'账户',direction:'方向',long:'做多',short:'做空',entryPrice:'进场价',exitPrice:'出场价',qty:'手数',commission:'手续费',entryTime:'进场时间',exitTime:'出场时间',
+localTime:'填本地时间，例如 22:30:00，打满两位会自动跳到下一格；出场早于进场会自动算成第二天。交易日按期货交易日计算（纽约时间下午 5 点换日）',rating:'评分',tags:'标签',addTag:'+ 自定义标签（回车添加）',review:'复盘与总结',images:'图片',dropImages:'点击选择、拖入，或直接 Ctrl+V 粘贴截图',
+save:'保存',cancel:'取消',edit:'编辑',del:'删除',close:'关闭',result:'结果',W:'盈利',B:'保本',L:'亏损',nyDate:'交易日',points:'点数',time:'时间',
+confirmDelete:'确定删除这笔交易？',accounts:'账户',addAccount:'+ 添加账户',accName:'账户名称',startBal:'起始资金',rValue:'1R 金额',balance:'当前余额',
+language:'语言',beThreshold:'保本范围（±R）',defComm:'默认手续费（每手，来回）',backup:'备份',exportB:'导出备份',importB:'导入备份',lastBackup:'上次备份',never:'从未',
+importConfirm:'导入会覆盖现在所有数据，确定吗？',backupWarn:'数据只存在这个浏览器里，清除浏览器数据会全部丢失。请定期导出备份。',customTags:'自定义标签',noCustomTags:'还没有自定义标签',
+welcome:'欢迎！先建立你的第一个账户。',editAccount:'编辑账户',deleteAcc:'删除这个账户和它的所有交易？',errPrice:'请填写进场价、出场价和手数',errTime:'请填写日期、进场时间和出场时间（例如 22:46:00）',tradeDate:'日期（本地）',errAcc:'请填写账户名称、起始资金和 1R 金额',
+cumPnl:'累计盈亏',newTradeTitle:'新交易',editTradeTitle:'编辑交易',tradeDetail:'交易详情',dayTrades:'当日交易',noNotes:'没有写复盘',contracts:'手',importOk:'导入完成',exported:'已导出',
+weekdays:['周日','周一','周二','周三','周四','周五','周六'],monthFmt:(y,m)=>`${y}年${m}月`,startPoint:'起点'},
+en:{appSub:'Trade Journal',perf:'Monthly',months:['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'],yearNet:'Year net P&L',profitMonths:'Profitable months',bestMonth:'Best month',worstMonth:'Worst month',noTradesMonth:'No trades',future:'Upcoming',multiYear:'Year by year',fullYear:'Year',tradesUnit:'trades',addAnTag:'+ Add tag',lowN:'low n',tagPerf:'Tag performance',expectancy:'Expectancy (R / trade)',noAnTags:'No tags selected. Use “+ Add tag”, e.g. V1.0, V2.0, V3.0, FOMO, Revenge.',anHint:'Expectancy = average R per trade: positive means it makes money long-term, negative means it loses. A trade with several tags counts in each, so rows do not add up to the total. “Low n” marks tags with fewer than 20 trades: not enough data yet.',streaks:'Max win / loss streak',curStreak:'Current',winStreak:'win streak',lossStreak:'loss streak',overview:'Overview',historyNav:'Trade History',analysis:'Analysis',recent:'Last 15 trades',viewAll:'View all →',maxWin:'Largest win',maxLoss:'Largest loss',any:'All',price:'Price',reset:'Clear filters',model:'Model',avgR:'Avg R',totalR:'Total R',modelTitle:'Model performance',noModel:'No model tag',
+modelHint:'Groups trades by tags starting with V (e.g. V1.0, V2.0, V3.0), using the period and account above. Groups with fewer than 20 trades are dimmed: not enough data to draw conclusions yet.',noModelTags:'No tags starting with V yet. Add V1.0, V2.0, V3.0 tags to your trades and stats will appear here.',newTrade:'+ New Trade',allAccounts:'All accounts',settings:'Settings',all:'All',year:'Year',month:'Month',week:'Week',day:'Day',
+netPnl:'Net P&L',winRate:'Win rate',exclBE:'excl. BE',inclBE:'incl. BE',trades:'Trades',wbl:'Win / BE / Loss',avgWin:'Avg win',avgLoss:'Avg loss',pf:'Profit factor',avgDur:'Avg duration',avgRating:'Avg rating',
+equity:'Equity curve',calendar:'Trading calendar',history:'Trading history',weekTotal:'Week',date:'Date',symbol:'Symbol',count:'Trades',duration:'Duration',win:'Win %',noTrades:'No trades in this period',
+account:'Account',direction:'Direction',long:'Long',short:'Short',entryPrice:'Entry price',exitPrice:'Exit price',qty:'Contracts',commission:'Commission',entryTime:'Entry time',exitTime:'Exit time',
+localTime:'Local time, e.g. 22:46:00; exit earlier than entry counts as next day. Trading day follows the futures session (rolls at 5 pm New York time)',rating:'Rating',tags:'Tags',addTag:'+ Custom tag (Enter to add)',review:'Review & notes',images:'Images',dropImages:'Click, drop, or paste (Ctrl+V) screenshots',
+save:'Save',cancel:'Cancel',edit:'Edit',del:'Delete',close:'Close',result:'Result',W:'Win',B:'BE',L:'Loss',nyDate:'Trading day',points:'Points',time:'Time',
+confirmDelete:'Delete this trade?',accounts:'Accounts',addAccount:'+ Add account',accName:'Account name',startBal:'Starting balance',rValue:'1R amount',balance:'Balance',
+language:'Language',beThreshold:'Break-even range (±R)',defComm:'Default commission (per contract, round trip)',backup:'Backup',exportB:'Export backup',importB:'Import backup',lastBackup:'Last backup',never:'Never',
+importConfirm:'Import will replace all current data. Continue?',backupWarn:'Data lives only in this browser; clearing browser data erases it. Export a backup regularly.',customTags:'Custom tags',noCustomTags:'No custom tags yet',
+welcome:'Welcome! Create your first account.',editAccount:'Edit account',deleteAcc:'Delete this account and all its trades?',errPrice:'Fill in entry, exit and contracts',errTime:'Fill in date, entry and exit time (e.g. 22:46:00)',tradeDate:'Date (local)',errAcc:'Fill in name, starting balance and 1R amount',
+cumPnl:'Cumulative P&L',newTradeTitle:'New trade',editTradeTitle:'Edit trade',tradeDetail:'Trade detail',dayTrades:'Trades this day',noNotes:'No review written',contracts:'ct',importOk:'Import complete',exported:'Exported',
+weekdays:['Sun','Mon','Tue','Wed','Thu','Fri','Sat'],monthFmt:(y,m)=>new Date(Date.UTC(y,m-1,1)).toLocaleString('en-US',{month:'short',year:'numeric',timeZone:'UTC'}),startPoint:'Start'}
+};
+/* ---------- state ---------- */
+let S={settings:{lang:'zh',unit:'$',account:'all',be:0.1,commission:1,lastBackup:null},accounts:[],tags:[],trades:[]};
+const UI={page:'overview',period:'month',anchor:null,calMonth:null,f:{res:'all',dir:'all',tag:'all',rating:'0'}};
+const t=k=>I18N[S.settings.lang][k]??k;
+const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,8);
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+/* ---------- storage ---------- */
+const DB={db:null,
+ open(){return new Promise((res,rej)=>{const r=indexedDB.open('trade-journal',1);r.onupgradeneeded=()=>{r.result.createObjectStore('kv');r.result.createObjectStore('images')};r.onsuccess=()=>{DB.db=r.result;res()};r.onerror=()=>rej(r.error)})},
+ req(store,mode,fn){return new Promise((res,rej)=>{const tx=DB.db.transaction(store,mode);const r=fn(tx.objectStore(store));tx.oncomplete=()=>res(r&&r.result);tx.onerror=()=>rej(tx.error)})},
+ get:(s,k)=>DB.req(s,'readonly',st=>st.get(k)),
+ put:(s,k,v)=>DB.req(s,'readwrite',st=>st.put(v,k)),
+ del:(s,k)=>DB.req(s,'readwrite',st=>st.delete(k)),
+ clear:s=>DB.req(s,'readwrite',st=>st.clear()),
+ all(s){return new Promise((res,rej)=>{const out={};const r=DB.db.transaction(s).objectStore(s).openCursor();r.onsuccess=()=>{const c=r.result;if(c){out[c.key]=c.value;c.continue()}else res(out)};r.onerror=()=>rej(r.error)})}
+};
+const save=()=>DB.put('kv','state',S);
+const imgCache={};
+async function hydrateImages(root=document){
+  for(const el of root.querySelectorAll('img[data-img]')){
+    const id=el.dataset.img;
+    if(!(id in imgCache))imgCache[id]=await DB.get('images',id)||'';
+    el.src=imgCache[id];el.removeAttribute('data-img');
+  }
+}
+/* ---------- dates ---------- */
+const nyFmt=new Intl.DateTimeFormat('en-CA',{timeZone:'America/New_York',year:'numeric',month:'2-digit',day:'2-digit'});
+const nyPartsFmt=new Intl.DateTimeFormat('en-US',{timeZone:'America/New_York',year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',hourCycle:'h23'});
+// Futures trading day: CME closes 17:00 New York time; anything after belongs to the next trading day.
+function nyDate(ms){
+  const p={};nyPartsFmt.formatToParts(new Date(ms)).forEach(x=>p[x.type]=x.value);
+  const d=`${p.year}-${p.month}-${p.day}`;
+  return +p.hour>=17?addDays(d,1):d;
+}
+const parseD=s=>new Date(s+'T00:00:00Z');
+const fmtD=d=>d.toISOString().slice(0,10);
+const addDays=(s,n)=>{const d=parseD(s);d.setUTCDate(d.getUTCDate()+n);return fmtD(d)};
+const daysIn=ym=>new Date(Date.UTC(+ym.slice(0,4),+ym.slice(5,7),0)).getUTCDate();
+const addMonths=(ym,n)=>{const d=new Date(Date.UTC(+ym.slice(0,4),+ym.slice(5,7)-1+n,1));return d.toISOString().slice(0,7)};
+const pad=n=>String(n).padStart(2,'0');
+const toLocalInput=ms=>{const d=new Date(ms);return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`};
+const fromLocalInput=v=>v?new Date(v).getTime():NaN;
+function parseTime(v){
+  v=String(v||'').trim().replace(/[：.]/g,':');if(!v)return null;
+  let h,m,s=0,mt;
+  if(mt=v.match(/^(\d{1,2}):(\d{1,2})(?::(\d{1,2}))?$/)){h=+mt[1];m=+mt[2];s=+(mt[3]||0)}
+  else if(mt=v.match(/^(\d{2})(\d{2})(\d{2})?$/)){h=+mt[1];m=+mt[2];s=+(mt[3]||0)}
+  else return null;
+  if(h>23||m>59||s>59)return null;return `${pad(h)}:${pad(m)}:${pad(s)}`;
+}
+function timeBoxHTML(id){const i=k=>`<input inputmode="numeric" maxlength="2" placeholder="--" autocomplete="off" data-i="${k}">`;return `<div class="tbox mono" id="${id}">${i(0)}<span>:</span>${i(1)}<span>:</span>${i(2)}</div>`}
+function tbGet(box){const v=[...box.querySelectorAll('input')].map(i=>i.value);if(!v[0]&&!v[1])return null;return parseTime(`${v[0]}:${v[1]}:${v[2]||'0'}`)}
+function tbSet(box,v){const p=(v||'').split(':');box.querySelectorAll('input').forEach((i,k)=>i.value=p[k]||'')}
+function tbWire(box,onChange){
+  const ins=[...box.querySelectorAll('input')];
+  ins.forEach((inp,k)=>{
+    inp.addEventListener('input',()=>{inp.value=inp.value.replace(/\D/g,'').slice(0,2);
+      if(inp.value.length===2&&k<2){ins[k+1].focus();ins[k+1].select()}onChange()});
+    inp.addEventListener('keydown',e=>{
+      if(e.key==='Backspace'&&!inp.value&&k>0){e.preventDefault();ins[k-1].focus();ins[k-1].value=ins[k-1].value.slice(0,1);onChange()}
+      else if(e.key==='ArrowLeft'&&inp.selectionStart===0&&k>0){e.preventDefault();ins[k-1].focus()}
+      else if(e.key==='ArrowRight'&&inp.selectionEnd===inp.value.length&&k<2){e.preventDefault();ins[k+1].focus()}
+      else if((e.key===':'||e.key==='：')&&k<2){e.preventDefault();ins[k+1].focus();ins[k+1].select()}});
+    inp.addEventListener('paste',e=>{const v=parseTime((e.clipboardData||window.clipboardData).getData('text'));if(v){e.preventDefault();e.stopPropagation();tbSet(box,v);onChange()}});
+    inp.addEventListener('focus',()=>inp.select());
+    inp.addEventListener('blur',()=>{if(inp.value.length===1)inp.value='0'+inp.value});
+  });
+  box.addEventListener('mousedown',e=>{if(e.target===box||e.target.tagName==='SPAN'){e.preventDefault();(ins.find(i=>!i.value)||ins[2]).focus()}});
+}
+const hms=ms=>{const d=new Date(ms);return `${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`};
+function fmtDur(sec){
+  if(!isFinite(sec)||sec<0)return '—';sec=Math.round(sec);
+  const h=Math.floor(sec/3600),m=Math.floor(sec%3600/60),s=sec%60,zh=S.settings.lang==='zh';
+  if(h)return zh?`${h}小时${m}分`:`${h}h ${m}m`;
+  return zh?`${m}分${s}秒`:`${m}m ${s}s`;
+}
+function weekday(s){return t('weekdays')[parseD(s).getUTCDay()]}
+/* ---------- calc ---------- */
+function calc(tr){
+  const net=Math.round(((tr.exit-tr.entry)*(tr.dir==='long'?1:-1)*tr.pv*tr.qty-(+tr.commission||0))*100)/100;
+  const r=tr.rValue?net/tr.rValue:0,be=+S.settings.be||0;
+  return{net,r,res:r>be?'W':r<-be?'L':'B',dur:(tr.exitTime-tr.entryTime)/1000,date:isFinite(tr.entryTime)?nyDate(tr.entryTime):'',pts:(tr.exit-tr.entry)*(tr.dir==='long'?1:-1)};
+}
+function money(v,sign=true){const s=Math.abs(v).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});return (v<0?'-':sign&&v>0?'+':'')+'$'+s}
+function rStr(r){return (r>0?'+':r<0?'-':'')+Math.abs(r).toFixed(2)+'R'}
+function val(net,r){return S.settings.unit==='R'?rStr(r):money(net)}
+const cls=v=>v>0?'pos':v<0?'neg':'zero';
+function winPct(list){const w=list.filter(x=>x.c.res==='W').length,l=list.filter(x=>x.c.res==='L').length;return w+l?w/(w+l):null}
+function pctBadge(list){
+  const p=winPct(list);
+  if(p===null)return `<span class="badge b">BE</span>`;
+  const c=p>=.5?'w':'l';return `<span class="badge ${p===0?'l':c}">${+(p*100).toFixed(2)}%</span>`;
+}
+function stats(list){
+  const n=list.length,W=list.filter(x=>x.c.res==='W'),L=list.filter(x=>x.c.res==='L'),B=n-W.length-L.length;
+  const sum=(a,f)=>a.reduce((s,x)=>s+f(x),0);
+  const gw=sum(W,x=>x.c.net),gl=sum(L,x=>x.c.net),rated=list.filter(x=>x.tr.rating>0);
+  return{n,w:W.length,l:L.length,b:B,net:sum(list,x=>x.c.net),r:sum(list,x=>x.c.r),
+    wr:W.length+L.length?W.length/(W.length+L.length):null,wrAll:n?W.length/n:null,
+    avgW:W.length?gw/W.length:null,avgWR:W.length?sum(W,x=>x.c.r)/W.length:null,
+    avgL:L.length?gl/L.length:null,avgLR:L.length?sum(L,x=>x.c.r)/L.length:null,
+    pf:gl?gw/Math.abs(gl):(gw>0?Infinity:null),dur:n?sum(list,x=>x.c.dur)/n:null,
+    rating:rated.length?sum(rated,x=>x.tr.rating)/rated.length:null,
+    ...streaks(list),
+    maxW:W.length?W.reduce((m,x)=>x.c.net>m.c.net?x:m):null,maxL:L.length?L.reduce((m,x)=>x.c.net<m.c.net?x:m):null};
+}
+function streaks(list){
+  let cw=0,cl=0,mw=0,ml=0;
+  list.forEach(x=>{if(x.c.res==='W'){cw++;cl=0}else if(x.c.res==='L'){cl++;cw=0}mw=Math.max(mw,cw);ml=Math.max(ml,cl)});
+  return{mw,ml,cur:cw?{t:'W',n:cw}:cl?{t:'L',n:cl}:null};
+}
+/* ---------- animation ---------- */
+const reduceMotion=window.matchMedia&&matchMedia('(prefers-reduced-motion: reduce)').matches;
+const NUMF={money:v=>money(v),R:v=>rStr(v),pct:v=>(v*100).toFixed(1)+'%',int:v=>String(Math.round(v))};
+function num(v,f){return `<span class="cnt" data-v="${v}" data-f="${f}">${NUMF[f](v)}</span>`}
+function cv(net,r){return S.settings.unit==='R'?num(r,'R'):num(net,'money')}
+const ease=k=>1-Math.pow(1-k,3);
+function countUp(root,dur=900){
+  const els=[...root.querySelectorAll('.cnt')].map(el=>({el,v:+el.dataset.v,f:NUMF[el.dataset.f]}));
+  const t0=performance.now();
+  els.forEach(o=>o.el.textContent=o.f(0));
+  (function step(now){const k=Math.min(1,(now-t0)/dur),e=ease(k);
+    els.forEach(o=>o.el.textContent=o.f(k<1?o.v*e:o.v));if(k<1)requestAnimationFrame(step)})(t0);
+}
+/* ---------- selectors ---------- */
+const acct=id=>S.accounts.find(a=>a.id===id);
+function enriched(){
+  const a=S.settings.account;
+  return S.trades.filter(tr=>a==='all'||tr.accountId===a).map(tr=>({tr,c:calc(tr)})).sort((x,y)=>x.tr.entryTime-y.tr.entryTime);
+}
+function range(){
+  const p=UI.period,a=UI.anchor;
+  if(p==='all')return null;if(p==='day')return[a,a];
+  if(p==='week'){const s=addDays(a,-parseD(a).getUTCDay());return[s,addDays(s,6)]}
+  if(p==='month'){const m=a.slice(0,7);return[m+'-01',m+'-'+pad(daysIn(m))]}
+  const y=a.slice(0,4);return[y+'-01-01',y+'-12-31'];
+}
+function inPeriod(list){const r=range();return r?list.filter(x=>x.c.date>=r[0]&&x.c.date<=r[1]):list}
+function periodLabel(){
+  const p=UI.period,a=UI.anchor;
+  if(p==='all')return t('all');
+  if(p==='day')return `${a} (${weekday(a)})`;
+  if(p==='week'){const[s,e]=range();return `${s.slice(5).replace('-','/')} – ${e.slice(5).replace('-','/')}, ${e.slice(0,4)}`}
+  if(p==='month')return t('monthFmt')(+a.slice(0,4),+a.slice(5,7));
+  return a.slice(0,4);
+}
+function shiftPeriod(n){
+  const p=UI.period,a=UI.anchor;
+  if(p==='day')UI.anchor=addDays(a,n);
+  else if(p==='week')UI.anchor=addDays(a,7*n);
+  else if(p==='month')UI.anchor=addMonths(a.slice(0,7),n)+'-01';
+  else if(p==='year')UI.anchor=(+a.slice(0,4)+n)+'-01-01';
+  if(p==='month')UI.calMonth=UI.anchor.slice(0,7);
+  render({anim:true});
+}
+/* ---------- star widget ---------- */
+const STAR='<svg viewBox="0 0 24 24"><path d="M12 2.5l2.9 6.1 6.6.8-4.9 4.6 1.3 6.6L12 17.3l-5.9 3.3 1.3-6.6L2.5 9.4l6.6-.8z" fill="currentColor"/></svg>';
+function starsHTML(v,size=''){
+  const w=size==='sm'?14:22;
+  return `<span class="stars ${size}"><span class="row" style="color:#323843">${STAR.repeat(5)}</span><span class="row fg" style="color:var(--gold);width:${v*w}px">${STAR.repeat(5)}</span></span>`;
+}
+/* ---------- render ---------- */
+function renderTop(){
+  const opts=[`<option value="all">${t('allAccounts')}</option>`].concat(S.accounts.map(a=>`<option value="${a.id}" ${S.settings.account===a.id?'selected':''}>${esc(a.name)}</option>`)).join('');
+  document.getElementById('top').innerHTML=`
+   <div class="page-title">${t({history:'historyNav',perf:'perf'}[UI.page]||UI.page)}</div>
+   <select class="btn" id="acctSel">${opts}</select>
+   <div class="seg" id="unitSeg"><button data-u="$" class="${S.settings.unit==='$'?'on':''}">$</button><button data-u="R" class="${S.settings.unit==='R'?'on':''}">R</button></div>
+   <div class="seg" id="langSeg"><button data-l="zh" class="${S.settings.lang==='zh'?'on':''}">中</button><button data-l="en" class="${S.settings.lang==='en'?'on':''}">EN</button></div>
+   <button class="btn primary" id="newBtn">${t('newTrade')}</button>`;
+  document.getElementById('acctSel').value=S.settings.account;
+  document.getElementById('acctSel').onchange=e=>{S.settings.account=e.target.value;save();render({anim:true})};
+  document.querySelectorAll('#unitSeg button').forEach(b=>b.onclick=()=>{S.settings.unit=b.dataset.u;save();render()});
+  document.querySelectorAll('#langSeg button').forEach(b=>b.onclick=()=>{S.settings.lang=b.dataset.l;document.documentElement.lang=b.dataset.l==='zh'?'zh':'en';save();render()});
+  document.getElementById('newBtn').onclick=()=>S.accounts.length?openTradeForm():openAccountForm();
+}
+const ICONS={
+ perf:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M3 9h18M8 2v4M16 2v4M7 13h2M11 13h2M15 13h2M7 17h2M11 17h2"/></svg>',
+ overview:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="14" y="12" width="7" height="9" rx="1.5"/><rect x="3" y="16" width="7" height="5" rx="1.5"/></svg>',
+ history:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M8 6h13M8 12h13M8 18h13"/><circle cx="4" cy="6" r="1"/><circle cx="4" cy="12" r="1"/><circle cx="4" cy="18" r="1"/></svg>',
+ analysis:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg>',
+ settings:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>',
+ backup:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 3v12M7 10l5 5 5-5M4 21h16"/></svg>'
+};
+function renderSide(){
+  const nav=(p,label,extra='')=>`<div class="nav ${UI.page===p?'on':''}" data-page="${p}">${ICONS[p]}<span>${label}</span>${extra}</div>`;
+  const lb=S.settings.lastBackup;
+  document.getElementById('side').innerHTML=`
+   <div class="brand">TRADE JOURNAL<small>${t('appSub')}</small></div>
+   ${nav('overview',t('overview'))}${nav('history',t('historyNav'))}${nav('perf',t('perf'))}${nav('analysis',t('analysis'))}
+   <div style="flex:1"></div>
+   <div class="nav" id="sideSet">${ICONS.settings}<span>${t('settings')}</span></div>
+   <div class="nav" id="sideBk">${ICONS.backup}<span>${t('exportB')}<small class="muted" style="display:block;font-size:11px">${t('lastBackup')}: ${lb?new Date(lb).toLocaleDateString():t('never')}</small></span></div>`;
+  document.querySelectorAll('#side [data-page]').forEach(n=>n.onclick=()=>{UI.page=n.dataset.page;window.scrollTo(0,0);render({anim:true})});
+  document.getElementById('sideSet').onclick=openSettings;
+  document.getElementById('sideBk').onclick=exportBackup;
+}
+function periodBar(){
+  return `<div class="bar">
+    <div class="seg" id="perSeg">${['all','year','month','week','day'].map(p=>`<button data-p="${p}" class="${UI.period===p?'on':''}">${t(p)}</button>`).join('')}</div>
+    ${UI.period!=='all'?`<button class="btn" id="pPrev">←</button><div class="label">${periodLabel()}</div><button class="btn" id="pNext">→</button>`:''}
+  </div>`;
+}
+function render(opts={}){
+  const A=!!opts.anim&&!reduceMotion;
+  renderSide();renderTop();
+  const all=enriched(),list=inPeriod(all),app=document.getElementById('app');
+  const lb=S.settings.lastBackup,warn=false;
+  const a=S.settings.account!=='all'&&acct(S.settings.account);
+  let acctBar='';
+  if(a){const tot=all.reduce((s,x)=>s+x.c.net,0);
+    acctBar=`<div class="card acctinfo"><span>${t('account')}: <b>${esc(a.name)}</b></span><span>${t('startBal')}: <b>${money(a.start,false)}</b></span><span>${t('balance')}: <b class="${cls(tot)}">${money(a.start+tot,false)}</b></span><span>${t('rValue')}: <b>${money(a.rValue,false)}</b></span></div>`}
+  const head=`${warn?`<div class="banner">⚠ ${t('backupWarn')}<button class="btn sm" id="bkNow" style="margin-left:auto">${t('exportB')}</button></div>`:''}`;
+  if(UI.page==='history')app.innerHTML=head+historyPage(list);
+  else if(UI.page==='perf')app.innerHTML=head+perfPage(all,A);
+  else if(UI.page==='analysis')app.innerHTML=head+analysisPage(list);
+  else app.innerHTML=head+acctBar+overviewPage(all,list,A||(!reduceMotion&&!!opts.cal));
+  if(A){app.classList.remove('fade');void app.offsetWidth;app.classList.add('fade')}
+  // events
+  document.querySelectorAll('#perSeg button').forEach(b=>b.onclick=()=>{UI.period=b.dataset.p;render({anim:true})});
+  const on=(id,f)=>{const el=document.getElementById(id);if(el)el.onclick=f};
+  on('pPrev',()=>shiftPeriod(-1));on('pNext',()=>shiftPeriod(1));on('bkNow',exportBackup);
+  on('cPrev',()=>{UI.calMonth=addMonths(UI.calMonth,-1);render({cal:true})});on('cNext',()=>{UI.calMonth=addMonths(UI.calMonth,1);render({cal:true})});
+  on('viewAll',()=>{UI.page='history';window.scrollTo(0,0);render({anim:true})});
+  app.querySelectorAll('.cell.has').forEach(c=>c.onclick=()=>openDay(c.dataset.d));
+  app.querySelectorAll('.cell.wk[data-w]').forEach(c=>c.onclick=()=>{UI.period='week';UI.anchor=c.dataset.w;render({anim:true})});
+  app.querySelectorAll('tr.trow').forEach(r=>r.onclick=()=>openDetail(r.dataset.id));
+  app.querySelectorAll('[data-f]').forEach(s=>s.onchange=()=>{UI.f[s.dataset.f]=s.value;render()});
+  const an=document.getElementById('anAdd');if(an)an.onchange=()=>{if(an.value){anTagIds().push(an.value);save();render()}};
+  app.querySelectorAll('[data-rm]').forEach(b=>b.onclick=()=>{S.settings.anTags=anTagIds().filter(id=>id!==b.dataset.rm);save();render()});
+  on('yPrev',()=>{UI.perfYear--;render({anim:true})});on('yNext',()=>{UI.perfYear++;render({anim:true})});
+  app.querySelectorAll('[data-year]').forEach(l=>l.onclick=e=>{e.preventDefault();UI.perfYear=+l.dataset.year;render({anim:true})});
+  if(UI.page==='perf'){app.querySelectorAll('[data-month]').forEach(c=>c.onclick=()=>{const k=c.dataset.month;UI.page='overview';UI.period='month';UI.anchor=k+'-01';UI.calMonth=k;window.scrollTo(0,0);render({anim:true})});if(A)countUp(app)}
+  on('fReset',()=>{UI.f={res:'all',dir:'all',tag:'all',rating:'0'};render()});
+  if(UI.page==='overview'){drawEquity(list,A);if(A)countUp(app)}
+}
+function overviewPage(all,list,calAnim){
+  const st=stats(list);
+  const recent=[...all].sort((x,y)=>y.tr.entryTime-x.tr.entryTime).slice(0,15);
+  return `${periodBar()}
+  <div class="stats">
+    <div class="stat"><div class="k">${t('netPnl')}</div><div class="v ${cls(st.net)}">${cv(st.net,st.r)}</div><div class="s">${S.settings.unit==='R'?money(st.net):rStr(st.r)}</div></div>
+    <div class="stat"><div class="k">${t('winRate')}</div><div class="v">${st.wr===null?'—':num(st.wr,'pct')}</div><div class="s">${t('exclBE')} · ${t('inclBE')} ${st.wrAll===null?'—':(st.wrAll*100).toFixed(1)+'%'}</div></div>
+    <div class="stat"><div class="k">${t('wbl')}</div><div class="v"><span class="pos">${num(st.w,'int')}</span> / <span class="zero">${num(st.b,'int')}</span> / <span class="neg">${num(st.l,'int')}</span></div><div class="s">${t('trades')}: ${st.n}</div></div>
+    <div class="stat"><div class="k">${t('avgWin')} / ${t('avgLoss')}</div><div class="v" style="font-size:17px"><span class="pos">${st.avgW===null?'—':cv(st.avgW,st.avgWR)}</span> / <span class="neg">${st.avgL===null?'—':cv(st.avgL,st.avgLR)}</span></div><div class="s">${t('pf')}: ${st.pf===null?'—':st.pf===Infinity?'∞':st.pf.toFixed(2)}</div></div>
+    <div class="stat"><div class="k">${t('maxWin')} / ${t('maxLoss')}</div><div class="v" style="font-size:17px"><span class="pos">${st.maxW?cv(st.maxW.c.net,st.maxW.c.r):'—'}</span> / <span class="neg">${st.maxL?cv(st.maxL.c.net,st.maxL.c.r):'—'}</span></div><div class="s">${t('avgRating')}: ${st.rating===null?'—':st.rating.toFixed(1)+' ★'}</div></div>
+    <div class="stat"><div class="k">${t('streaks')}</div><div class="v"><span class="pos">${num(st.mw,'int')}</span> / <span class="neg">${num(st.ml,'int')}</span></div><div class="s">${t('curStreak')}: ${st.cur?`<span class="${st.cur.t==='W'?'pos':'neg'}">${st.cur.n} ${t(st.cur.t==='W'?'winStreak':'lossStreak')}</span>`:'—'}</div></div>
+  </div>
+  <div class="card"><h3>${t('equity')}</h3><div id="eq"></div></div>
+  <div class="card">
+    <div class="bar" style="margin-bottom:12px"><h3 style="margin:0;margin-right:auto">${t('calendar')}</h3><button class="btn" id="cPrev">←</button><div class="label" style="min-width:120px">${t('monthFmt')(+UI.calMonth.slice(0,4),+UI.calMonth.slice(5,7))}</div><button class="btn" id="cNext">→</button></div>
+    ${calendarHTML(all,calAnim)}
+  </div>
+  <div class="card"><div class="bar" style="margin-bottom:12px"><h3 style="margin:0;margin-right:auto">${t('recent')}</h3><button class="btn sm" id="viewAll">${t('viewAll')}</button></div>${tradeTable(recent)}</div>`;
+}
+function calendarHTML(all,anim=false){
+  const ym=UI.calMonth,first=parseD(ym+'-01').getUTCDay(),n=daysIn(ym),today=nyDate(Date.now());
+  const byDay={};all.forEach(x=>{(byDay[x.c.date]=byDay[x.c.date]||[]).push(x)});
+  let h=t('weekdays').map(w=>`<div class="hd">${w.toUpperCase()}</div>`).join('')+`<div class="hd wkh">${t('weekTotal').toUpperCase()}</div>`;
+  let ci=0;const dl=()=>anim?` style="animation-delay:${Math.floor(ci/8)*70+(ci++%8)*18}ms"`:'';
+  const cells=[];for(let i=0;i<first;i++)cells.push(null);for(let d=1;d<=n;d++)cells.push(`${ym}-${pad(d)}`);while(cells.length%7)cells.push(null);
+  for(let i=0;i<cells.length;i+=7){
+    const wk=cells.slice(i,i+7);let wl=[];
+    wk.forEach(d=>{
+      if(!d){h+=`<div class="cell empty"${dl()}></div>`;return}
+      const l=byDay[d]||[];wl=wl.concat(l);
+      if(!l.length){h+=`<div class="cell ${d===today?'today':''}"${dl()}><div class="dn">${+d.slice(8)}</div></div>`;return}
+      const s=stats(l),k=s.net>0&&s.r>S.settings.be?'w':s.net<0&&s.r<-S.settings.be?'l':'b';
+      h+=`<div class="cell has ${k} ${d===today?'today':''}" data-d="${d}"${dl()}><div class="dn">${+d.slice(8)}</div><div class="pv ${cls(s.net)}">${val(s.net,s.r)}</div><div class="wr">${l.length} · ${winPct(l)===null?'BE':+(winPct(l)*100).toFixed(2)+'%'}</div></div>`;
+    });
+    const ws=stats(wl),anchor=wk.find(Boolean);
+    const wd=dl();h+=wl.length?`<div class="cell wk" data-w="${anchor}"${wd.replace('style="','style="cursor:pointer;')||' style="cursor:pointer"'}><div class="dn muted" style="font-size:11px">${t('weekTotal')}</div><div class="pv ${cls(ws.net)}">${val(ws.net,ws.r)}</div><div class="wr">${ws.n} · ${ws.wr===null?'BE':+(ws.wr*100).toFixed(2)+'%'}</div></div>`:`<div class="cell wk"${wd}></div>`;
+  }
+  return `<div class="cal${anim?' anim':''}">${h}</div>`;
+}
+function tradeTable(rows){
+  if(!rows.length)return `<div class="empty-msg">${t('noTrades')}</div>`;
+  const multi=S.settings.account==='all'&&S.accounts.length>1;
+  let h=`<div class="tscroll"><table><thead><tr><th>${t('date')}</th><th>${t('time')}</th><th>${t('symbol')}</th><th>${t('direction')}</th><th class="hide-sm">${t('price')}</th><th class="hide-sm">${t('duration')}</th><th>${t('netPnl')}</th><th>${t('result')}</th><th class="hide-sm">${t('rating')}</th><th class="hide-sm">${t('tags')}</th></tr></thead><tbody>`;
+  rows.forEach(x=>{const tr=x.tr;
+    h+=`<tr class="trow" data-id="${tr.id}"><td class="mono nowrap">${x.c.date} <span class="muted">${weekday(x.c.date)}</span>${multi&&acct(tr.accountId)?`<div class="muted" style="font-size:11px">${esc(acct(tr.accountId).name)}</div>`:''}</td>
+     <td class="mono nowrap muted">${hms(tr.entryTime)} → ${hms(tr.exitTime)}</td>
+     <td><span class="sym">${tr.symbol}</span><span class="mono">×${tr.qty}</span></td>
+     <td><span class="dir ${tr.dir}">${t(tr.dir)}</span></td>
+     <td class="mono nowrap hide-sm">${tr.entry} → ${tr.exit}</td>
+     <td class="mono nowrap hide-sm">${fmtDur(x.c.dur)}</td>
+     <td class="mono nowrap ${cls(x.c.net)}"><b>${val(x.c.net,x.c.r)}</b><div style="font-size:11px;opacity:.75">${S.settings.unit==='R'?money(x.c.net):rStr(x.c.r)}</div></td>
+     <td><span class="badge ${x.c.res.toLowerCase()}">${t(x.c.res)}</span></td>
+     <td class="hide-sm nowrap">${starsHTML(tr.rating||0,'sm')}</td>
+     <td class="hide-sm">${tagChips(tr.tags)}</td></tr>`});
+  return h+'</tbody></table></div>';
+}
+function historyPage(list){
+  const f=UI.f;
+  let rows=list.filter(x=>(f.res==='all'||x.c.res===f.res)&&(f.dir==='all'||x.tr.dir===f.dir)&&(f.tag==='all'||(x.tr.tags||[]).includes(f.tag))&&((x.tr.rating||0)>=+f.rating));
+  rows.sort((a,b)=>b.tr.entryTime-a.tr.entryTime);
+  const st=stats(rows),active=f.res!=='all'||f.dir!=='all'||f.tag!=='all'||f.rating!=='0';
+  const sel=(k,opts)=>`<select class="btn" data-f="${k}">${opts.map(([v,l])=>`<option value="${v}" ${f[k]===v?'selected':''}>${esc(l)}</option>`).join('')}</select>`;
+  const any=t('any');
+  return `${periodBar()}
+  <div class="card filters">
+    <label>${t('result')} ${sel('res',[['all',any],['W',t('W')],['B',t('B')],['L',t('L')]])}</label>
+    <label>${t('direction')} ${sel('dir',[['all',any],['long',t('long')],['short',t('short')]])}</label>
+    <label>${t('tags')} ${sel('tag',[['all',any]].concat(S.tags.map(tg=>[tg.id,tagName(tg.id)])))}</label>
+    <label>${t('rating')} ${sel('rating',[['0',any]].concat([5,4.5,4,3.5,3,2,1].map(v=>[String(v),'≥ '+v+' ★'])))}</label>
+    ${active?`<button class="btn sm" id="fReset">${t('reset')}</button>`:''}
+    <div class="fsum"><span>${t('trades')} <b>${st.n}</b></span><span>${t('winRate')} <b>${st.wr===null?'—':(st.wr*100).toFixed(1)+'%'}</b></span><span>${t('netPnl')} <b class="${cls(st.net)}">${val(st.net,st.r)}</b></span></div>
+  </div>
+  <div class="card">${tradeTable(rows)}</div>`;
+}
+function monthName(m){return t('months')[m-1]}
+function perfData(all){
+  const a=S.settings.account!=='all'&&acct(S.settings.account);
+  const byM={};all.forEach(x=>{(byM[x.c.date.slice(0,7)]=byM[x.c.date.slice(0,7)]||[]).push(x)});
+  const balBefore=d=>a?a.start+all.filter(x=>x.c.date<d).reduce((s,x)=>s+x.c.net,0):null;
+  const cell=(rows,startDate)=>{const s=stats(rows),b=balBefore(startDate);return{rows,s,pct:b?s.net/b*100:null}};
+  return{a,byM,cell};
+}
+const pctStr=p=>p===null?'':(p>0?'+':p<0?'-':'')+Math.abs(p).toFixed(2)+'%';
+function perfPage(all,anim){
+  const Y=UI.perfYear,{a,byM,cell}=perfData(all),curM=nyDate(Date.now()).slice(0,7);
+  const months=[];for(let m=1;m<=12;m++){const k=`${Y}-${pad(m)}`;months.push({m,k,...cell(byM[k]||[],k+'-01'),future:k>curM})}
+  const yr=cell(months.flatMap(x=>x.rows),Y+'-01-01'),traded=months.filter(x=>x.s.n);
+  const best=traded.length?traded.reduce((p,x)=>x.s.net>p.s.net?x:p):null,worst=traded.length?traded.reduce((p,x)=>x.s.net<p.s.net?x:p):null;
+  const R=S.settings.unit==='R',v=x=>R?x.s.r:x.s.net;
+  // bars
+  const vals=months.map(v),pmax=Math.max(0,...vals),nmax=Math.max(0,...vals.map(x=>-x)),tot=pmax+nmax||1,H=170,up=H*pmax/tot;
+  const bars=months.map((x,i)=>{const vv=vals[i],h=Math.abs(vv)/tot*H;
+    return `<div class="pbar" data-month="${x.k}" title="${monthName(x.m)} ${x.s.n?val(x.s.net,x.s.r):''}">
+      <div class="pup" style="height:${up}px">${vv>0?`<div class="pfill p${anim?' grow':''}" style="height:${h}px;animation-delay:${i*45}ms"></div>`:''}</div>
+      <div class="pdn" style="height:${H-up}px">${vv<0?`<div class="pfill n${anim?' grow':''}" style="height:${h}px;animation-delay:${i*45}ms"></div>`:''}</div>
+      <div class="plab">${monthName(x.m)}</div></div>`}).join('');
+  const cards=months.map((x,i)=>{
+    const k=!x.s.n?'':x.s.net>0?'w':x.s.net<0?'l':'b';
+    const body=x.s.n?`<div class="pv ${cls(x.s.net)}">${cv(x.s.net,x.s.r)}</div>
+        ${x.pct!==null?`<div class="ppct ${cls(x.pct)}">${pctStr(x.pct)}</div>`:''}
+        <div class="pmeta">${x.s.n} ${t('tradesUnit')} · ${t('winRate')} ${x.s.wr===null?'BE':(x.s.wr*100).toFixed(0)+'%'}</div>`
+      :`<div class="pempty">${x.future?t('future'):t('noTradesMonth')}</div>`;
+    return `<div class="pcard ${k} ${x.future?'fut':''} ${x.k===curM?'cur':''}${anim?' pin':''}" data-month="${x.k}" style="${anim?`animation-delay:${i*35}ms`:''}"><div class="pm">${monthName(x.m)}</div>${body}</div>`}).join('');
+  // multi-year table
+  const years=[...new Set(all.map(x=>+x.c.date.slice(0,4)).concat([+curM.slice(0,4),Y]))].sort((p,q)=>q-p);
+  const yt=`<div class="tscroll"><table class="ytab"><thead><tr><th>${t('year')}</th>${months.map(x=>`<th>${monthName(x.m)}</th>`).join('')}<th>${t('fullYear')}</th></tr></thead><tbody>`+
+    years.map(y=>{let rowAll=[];const tds=[];for(let m=1;m<=12;m++){const k=`${y}-${pad(m)}`,rows=byM[k]||[];rowAll=rowAll.concat(rows);
+        if(!rows.length){tds.push(`<td class="muted">${k>curM?'':'—'}</td>`);continue}
+        const c=cell(rows,k+'-01');tds.push(`<td class="mono ${cls(c.s.net)} ycell" data-month="${k}">${val(c.s.net,c.s.r)}${c.pct!==null?`<div class="ypct">${pctStr(c.pct)}</div>`:''}</td>`)}
+      const yc=cell(rowAll,y+'-01-01');
+      return `<tr class="${y===Y?'ysel':''}"><td class="mono"><a href="#" data-year="${y}">${y}</a></td>${tds.join('')}<td class="mono ${cls(yc.s.net)}"><b>${yc.s.n?val(yc.s.net,yc.s.r):'—'}</b>${yc.s.n&&yc.pct!==null?`<div class="ypct">${pctStr(yc.pct)}</div>`:''}</td></tr>`}).join('')+`</tbody></table></div>`;
+  return `<div class="bar"><button class="btn" id="yPrev">←</button><div class="label" style="min-width:110px">${Y}</div><button class="btn" id="yNext">→</button></div>
+  <div class="stats">
+    <div class="stat"><div class="k">${t('yearNet')}</div><div class="v ${cls(yr.s.net)}">${cv(yr.s.net,yr.s.r)}</div><div class="s">${R?money(yr.s.net):rStr(yr.s.r)}${yr.pct!==null&&yr.s.n?' · '+pctStr(yr.pct):''}</div></div>
+    <div class="stat"><div class="k">${t('profitMonths')}</div><div class="v">${num(traded.filter(x=>x.s.net>0).length,'int')} <span class="muted" style="font-size:16px">/ ${traded.length}</span></div><div class="s">${t('trades')}: ${yr.s.n} · ${t('winRate')} ${yr.s.wr===null?'—':(yr.s.wr*100).toFixed(1)+'%'}</div></div>
+    <div class="stat"><div class="k">${t('bestMonth')} / ${t('worstMonth')}</div><div class="v" style="font-size:17px">${best?`<span class="pos">${monthName(best.m)} ${val(best.s.net,best.s.r)}</span>`:'—'}</div><div class="s">${worst&&worst!==best?`<span class="${cls(worst.s.net)}">${monthName(worst.m)} ${val(worst.s.net,worst.s.r)}</span>`:'—'}</div></div>
+  </div>
+  <div class="card"><div class="pbars">${bars}</div></div>
+  <div class="pgrid">${cards}</div>
+  <div class="card"><h3>${t('multiYear')}</h3>${yt}</div>`;
+}
+function anTagIds(){
+  if(!Array.isArray(S.settings.anTags))
+    S.settings.anTags=S.tags.filter(tg=>!tg.builtin&&/^v\s*\d/i.test(tg.name)).sort((a,b)=>a.name.localeCompare(b.name,undefined,{numeric:true})).map(tg=>tg.id);
+  S.settings.anTags=S.settings.anTags.filter(id=>S.tags.some(tg=>tg.id===id));
+  return S.settings.anTags;
+}
+function analysisPage(list){
+  const ids=anTagIds(),avail=S.tags.filter(tg=>!ids.includes(tg.id));
+  const picker=`<select class="btn" id="anAdd"><option value="">${t('addAnTag')}</option>${avail.map(tg=>`<option value="${tg.id}">${esc(tagName(tg.id))}</option>`).join('')}</select>`;
+  let body;
+  if(!ids.length)body=`<div class="empty-msg">${t('noAnTags')}</div>`;
+  else{
+    const groups=ids.map(id=>({id,name:tagName(id),rows:list.filter(x=>(x.tr.tags||[]).includes(id))}));
+    const maxAbs=Math.max(1e-9,...groups.map(g=>Math.abs(stats(g.rows).r)));
+    body=`<div class="tscroll"><table><thead><tr><th>${t('tags')}</th><th>${t('trades')}</th><th>${t('wbl')}</th><th>${t('winRate')}</th><th>${t('expectancy')}</th><th>${t('totalR')}</th><th>${t('netPnl')}</th><th style="width:20%"></th><th></th></tr></thead><tbody>`+
+    groups.map(g=>{const s=stats(g.rows),avgR=s.n?s.r/s.n:null,w=Math.abs(s.r)/maxAbs*100;
+      return `<tr class="${s.n?'':'zero-n'}"><td><span class="chip static">${esc(g.name)}</span></td><td class="mono">${s.n}${s.n&&s.n<20?` <span class="lown">${t('lowN')}</span>`:''}</td>
+      <td class="mono"><span class="pos">${s.w}</span> / <span class="zero">${s.b}</span> / <span class="neg">${s.l}</span></td>
+      <td class="mono">${s.wr===null?'—':(s.wr*100).toFixed(1)+'%'}</td>
+      <td class="mono ${avgR===null?'':cls(avgR)}"><b>${avgR===null?'—':rStr(avgR)}</b></td>
+      <td class="mono ${cls(s.r)}">${rStr(s.r)}</td>
+      <td class="mono ${cls(s.net)}">${money(s.net)}</td>
+      <td><div class="rbar"><div class="${s.r>=0?'p':'n'}" style="width:${w}%"></div></div></td>
+      <td><button class="btn sm rm-an" data-rm="${g.id}" title="${t('del')}">✕</button></td></tr>`}).join('')+`</tbody></table></div>`;
+  }
+  return `${periodBar()}<div class="card"><div class="bar" style="margin-bottom:12px"><h3 style="margin:0;margin-right:auto">${t('tagPerf')}</h3>${picker}</div>${body}<p class="muted" style="font-size:12px;margin:12px 0 0">${t('anHint')}</p></div>`;
+}
+function drawEquity(list,anim=false){
+  const box=document.getElementById('eq');if(!box)return;
+  const pts=[...list].sort((a,b)=>a.tr.exitTime-b.tr.exitTime);
+  if(!pts.length){box.innerHTML=`<div class="empty-msg">${t('noTrades')}</div>`;return}
+  const R=S.settings.unit==='R';let cum=0;const ys=[0];
+  pts.forEach(x=>{cum+=R?x.c.r:x.c.net;ys.push(cum)});
+  const W=Math.max(box.clientWidth,300),H=240,pl=78,pr=16,pt=14,pb=26;
+  let mn=Math.min(...ys),mx=Math.max(...ys);if(mn===mx){mn-=1;mx+=1}const padv=(mx-mn)*.08;mn-=padv;mx+=padv;
+  const X=i=>pl+(W-pl-pr)*(ys.length===1?0:i/(ys.length-1)),Y=v=>pt+(H-pt-pb)*(1-(v-mn)/(mx-mn));
+  const fmt=v=>R?rStr(v):(v<0?'-':v>0?'+':'')+'$'+Math.round(Math.abs(v)).toLocaleString('en-US');
+  let g='';for(let k=0;k<=4;k++){const v=mn+(mx-mn)*k/4;g+=`<line x1="${pl}" x2="${W-pr}" y1="${Y(v)}" y2="${Y(v)}" stroke="#1f242b"/><text x="${pl-8}" y="${Y(v)+4}" text-anchor="end">${fmt(v)}</text>`}
+  const line=ys.map((v,i)=>`${i?'L':'M'}${X(i).toFixed(1)},${Y(v).toFixed(1)}`).join(' ');
+  const z=Y(Math.min(Math.max(0,mn),mx)),last=ys[ys.length-1],col=last>=0?'#3ddc97':'#ef5a5a';
+  const dots=ys.map((v,i)=>{const x=i?pts[i-1]:null;const tip=i?`${x.c.date} ${x.tr.symbol} ${val(x.c.net,x.c.r)} → ${fmt(v)}`:t('startPoint');
+    return `<circle cx="${X(i)}" cy="${Y(v)}" r="3.5" fill="${col}"><title>${esc(tip)}</title></circle>`}).join('');
+  const step=Math.max(1,Math.ceil(pts.length/8));
+  const labels=pts.map((x,i)=>(i%step===0||i===pts.length-1)?`<text x="${X(i+1)}" y="${H-6}" text-anchor="middle">${x.c.date.slice(5)}</text>`:'').join('');
+  box.innerHTML=`<svg width="${W}" height="${H}">
+   <defs><linearGradient id="eqg" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="${col}" stop-opacity=".28"/><stop offset="1" stop-color="${col}" stop-opacity="0"/></linearGradient></defs>
+   ${g}<line x1="${pl}" x2="${W-pr}" y1="${Y(0)}" y2="${Y(0)}" stroke="#4a5260" stroke-dasharray="4 4"/>
+   <clipPath id="eqclip"><rect id="eqrect" x="0" y="0" width="${anim?0:W}" height="${H}"/></clipPath>
+   <g clip-path="url(#eqclip)"><g id="eqg2">
+   <path d="${line} L${X(ys.length-1)},${z} L${X(0)},${z} Z" fill="url(#eqg)"/>
+   <path d="${line}" fill="none" stroke="${col}" stroke-width="2.2"/>${dots}</g></g>${labels}</svg>`;
+  if(!anim)return;
+  const rect=box.querySelector('#eqrect'),grp=box.querySelector('#eqg2'),base=H-pb,dur=1100,t0=performance.now();
+  grp.setAttribute('transform',`translate(0 ${base}) scale(1 0)`);
+  (function step(now){const k=Math.min(1,(now-t0)/dur),e=ease(k),e2=ease(Math.min(1,k*1.15));
+    rect.setAttribute('width',(pl+(W-pl)*e2).toFixed(1));
+    grp.setAttribute('transform',`translate(0 ${(base*(1-e)).toFixed(2)}) scale(1 ${e.toFixed(4)})`);
+    if(k<1)requestAnimationFrame(step);else{rect.setAttribute('width',W);grp.removeAttribute('transform')}})(t0);
+}
+/* ---------- modal helpers ---------- */
+function openModal(html,cls=''){
+  const root=document.getElementById('modal-root');
+  const ov=document.createElement('div');ov.className='overlay';ov.innerHTML=`<div class="modal ${cls}">${html}</div>`;
+  ov.addEventListener('mousedown',e=>{if(e.target===ov)closeModal(ov)});
+  root.appendChild(ov);ov.querySelectorAll('.x').forEach(b=>b.onclick=()=>closeModal(ov));
+  hydrateImages(ov);return ov;
+}
+function closeModal(ov){(ov||document.querySelector('#modal-root .overlay:last-child'))?.remove()}
+function lightbox(src){const d=document.createElement('div');d.className='lightbox';d.innerHTML=`<img src="${src}">`;d.onclick=()=>d.remove();document.body.appendChild(d)}
+document.addEventListener('keydown',e=>{if(e.key==='Escape'){const lb=document.querySelector('.lightbox');if(lb)lb.remove();else closeModal()}});
+/* ---------- day modal ---------- */
+function openDay(d){
+  const l=enriched().filter(x=>x.c.date===d),s=stats(l);
+  const html=`<h2>${d} (${weekday(d)}) <span class="mono ${cls(s.net)}">${val(s.net,s.r)}</span> ${pctBadge(l)}<button class="btn x">✕</button></h2>
+  <h4 class="muted" style="margin:0 0 10px">${t('dayTrades')} · ${l.length}</h4>
+  ${l.map(x=>{const tr=x.tr;return `<div class="tcard" data-id="${tr.id}">
+     ${tr.images?.length?`<img class="tb" data-img="${tr.images[0]}">`:'<div class="tb"></div>'}
+     <div class="mid"><div><span class="dir ${tr.dir}">${t(tr.dir)}</span> <span class="mono">${tr.qty} ${tr.symbol} · ${tr.entry} → ${tr.exit}</span></div>
+       <div class="muted mono" style="font-size:12px">${hms(tr.entryTime)} → ${hms(tr.exitTime)} · ${fmtDur(x.c.dur)}${S.settings.account==='all'&&acct(tr.accountId)?' · '+esc(acct(tr.accountId).name):''}</div>
+       <div style="margin-top:4px">${starsHTML(tr.rating||0,'sm')} ${tagChips(tr.tags)}</div></div>
+     <div style="text-align:right"><div class="mono ${cls(x.c.net)}" style="font-size:17px;font-weight:700">${val(x.c.net,x.c.r)}</div><span class="badge ${x.c.res.toLowerCase()}">${t(x.c.res)}</span></div></div>`}).join('')}`;
+  const ov=openModal(html);
+  ov.querySelectorAll('.tcard').forEach(c=>c.onclick=()=>openDetail(c.dataset.id));
+}
+function tagName(id){const tg=S.tags.find(x=>x.id===id);if(!tg)return null;if(tg.builtin){const b=BUILTIN_TAGS.find(x=>x[0]===tg.builtin);return b?(S.settings.lang==='zh'?b[1]:b[2]):tg.name}return tg.name}
+function tagChips(ids){return (ids||[]).map(tagName).filter(Boolean).map(n=>`<span class="chip static">${esc(n)}</span>`).join('')}
+/* ---------- detail ---------- */
+function openDetail(id){
+  const tr=S.trades.find(x=>x.id===id);if(!tr)return;const c=calc(tr),a=acct(tr.accountId);
+  const html=`<h2><span class="dir ${tr.dir}">${t(tr.dir)}</span> ${tr.qty} ${tr.symbol} <span class="mono ${cls(c.net)}">${val(c.net,c.r)}</span><span class="badge ${c.res.toLowerCase()}">${t(c.res)}</span><button class="btn x">✕</button></h2>
+   <div class="kv">
+    <div><span>${t('account')}</span><b>${esc(a?.name||'—')}</b></div>
+    <div><span>${t('nyDate')}</span><b>${c.date}</b></div>
+    <div><span>${t('netPnl')}</span><b class="${cls(c.net)}">${money(c.net)}</b></div>
+    <div><span>R</span><b class="${cls(c.r)}">${rStr(c.r)}</b></div>
+    <div><span>${t('entryPrice')}</span><b>${tr.entry}</b></div>
+    <div><span>${t('exitPrice')}</span><b>${tr.exit}</b></div>
+    <div><span>${t('points')}</span><b class="${cls(c.pts)}">${+c.pts.toFixed(2)}</b></div>
+    <div><span>${t('commission')}</span><b>${money(+tr.commission||0,false)}</b></div>
+    <div><span>${t('entryTime')}</span><b>${hms(tr.entryTime)}</b></div>
+    <div><span>${t('exitTime')}</span><b>${hms(tr.exitTime)}</b></div>
+    <div><span>${t('duration')}</span><b>${fmtDur(c.dur)}</b></div>
+    <div><span>${t('rating')}</span>${starsHTML(tr.rating||0,'sm')} <b>${tr.rating||0}</b></div>
+   </div>
+   ${tr.tags?.length?`<div class="sec"><h4>${t('tags')}</h4>${tagChips(tr.tags)}</div>`:''}
+   <div class="sec"><h4>${t('review')}</h4><div class="notes">${tr.notes?esc(tr.notes):`<span class="muted">${t('noNotes')}</span>`}</div></div>
+   ${tr.images?.length?`<div class="sec"><h4>${t('images')}</h4><div class="gallery">${tr.images.map(i=>`<img data-img="${i}">`).join('')}</div></div>`:''}
+   <div class="foot"><button class="btn danger" id="dDel">${t('del')}</button><button class="btn" id="dEdit">${t('edit')}</button></div>`;
+  const ov=openModal(html,'wide');
+  ov.querySelector('.gallery')?.addEventListener('click',e=>{if(e.target.tagName==='IMG')lightbox(e.target.src)});
+  ov.querySelector('#dEdit').onclick=()=>{closeModal(ov);openTradeForm(tr)};
+  ov.querySelector('#dDel').onclick=async()=>{if(!confirm(t('confirmDelete')))return;
+    for(const i of tr.images||[]){await DB.del('images',i);delete imgCache[i]}
+    S.trades=S.trades.filter(x=>x.id!==id);await save();document.getElementById('modal-root').innerHTML='';render()};
+}
+/* ---------- trade form ---------- */
+function openTradeForm(existing){
+  const acc0=existing?.accountId||(S.settings.account!=='all'?S.settings.account:S.accounts[0].id);
+  const now=Date.now();
+  const d=existing?JSON.parse(JSON.stringify(existing)):{id:uid(),accountId:acc0,symbol:'MNQ',dir:'long',entry:'',exit:'',qty:1,commission:S.settings.commission,entryTime:now,exitTime:now,rating:0,tags:[],notes:'',images:[]};
+  const origImgs=[...(existing?.images||[])];
+  let imgs=(d.images||[]).map(id=>({id,src:null}));let commTouched=!!existing;
+  const accOpts=S.accounts.map(a=>`<option value="${a.id}">${esc(a.name)}</option>`).join('');
+  const html=`<h2>${existing?t('editTradeTitle'):t('newTradeTitle')}<button class="btn x">✕</button></h2>
+   <div class="grid">
+    <div class="f span2"><label>${t('account')}</label><select id="fAcc">${accOpts}</select></div>
+    <div class="f"><label>${t('symbol')}</label><select id="fSym">${Object.keys(SYMBOLS).map(s=>`<option>${s}</option>`).join('')}</select></div>
+    <div class="f"><label>${t('direction')}</label><div class="seg" id="fDir" style="width:100%"><button data-v="long" style="flex:1">${t('long')}</button><button data-v="short" style="flex:1">${t('short')}</button></div></div>
+    <div class="f"><label>${t('entryPrice')}</label><input id="fEn" type="number" step="0.25" inputmode="decimal"></div>
+    <div class="f"><label>${t('exitPrice')}</label><input id="fEx" type="number" step="0.25" inputmode="decimal"></div>
+    <div class="f"><label>${t('qty')}</label><input id="fQty" type="number" min="1" step="1"></div>
+    <div class="f"><label>${t('commission')} ($)</label><input id="fCom" type="number" min="0" step="0.01"></div>
+    <div class="f span2"><label>${t('tradeDate')}</label><input id="fDate" type="date"></div>
+    <div class="f"><label>${t('entryTime')}</label>${timeBoxHTML('fEt')}</div>
+    <div class="f"><label>${t('exitTime')}</label>${timeBoxHTML('fXt')}</div>
+    <div class="span4 muted" style="font-size:12px;margin-top:-6px">${t('localTime')}</div>
+    <div class="span4 preview" id="fPrev"></div>
+    <div class="f span4"><label>${t('rating')}</label><span class="stars input" id="fStar"></span> <span class="mono" id="fStarV"></span></div>
+    <div class="f span4"><label>${t('tags')}</label><div id="fTags"></div><input id="fTagNew" placeholder="${t('addTag')}" style="margin-top:6px;max-width:320px"></div>
+    <div class="f span4"><label>${t('review')}</label><textarea id="fNotes"></textarea></div>
+    <div class="f span4"><label>${t('images')}</label><div class="drop" id="fDrop">${t('dropImages')}</div><div class="thumbs" id="fThumbs"></div></div>
+   </div>
+   <div class="foot"><span class="neg" id="fErr" style="margin-right:auto"></span><button class="btn x">${t('cancel')}</button><button class="btn primary" id="fSave">${t('save')}</button></div>`;
+  const ov=openModal(html,'wide'),$=s=>ov.querySelector(s);
+  $('#fAcc').value=d.accountId;$('#fSym').value=d.symbol;$('#fEn').value=d.entry;$('#fEx').value=d.exit;$('#fQty').value=d.qty;$('#fCom').value=d.commission;
+  {const li=toLocalInput(d.entryTime);$('#fDate').value=li.slice(0,10);
+   if(existing){tbSet($('#fEt'),li.slice(11));tbSet($('#fXt'),toLocalInput(d.exitTime).slice(11))}}$('#fNotes').value=d.notes||'';
+  const setDir=()=>ov.querySelectorAll('#fDir button').forEach(b=>b.classList.toggle('on',b.dataset.v===d.dir));setDir();
+  ov.querySelectorAll('#fDir button').forEach(b=>b.onclick=()=>{d.dir=b.dataset.v;setDir();upd()});
+  function read(){
+    d.accountId=$('#fAcc').value;d.symbol=$('#fSym').value;d.entry=parseFloat($('#fEn').value);d.exit=parseFloat($('#fEx').value);
+    d.qty=parseInt($('#fQty').value)||0;if(!commTouched)$('#fCom').value=+(S.settings.commission*d.qty).toFixed(2);d.commission=parseFloat($('#fCom').value)||0;
+    const dt=$('#fDate').value,et=tbGet($('#fEt')),xt=tbGet($('#fXt'));
+    d.entryTime=dt&&et?fromLocalInput(dt+'T'+et):NaN;d.exitTime=dt&&xt?fromLocalInput(dt+'T'+xt):NaN;
+    if(isFinite(d.entryTime)&&isFinite(d.exitTime)&&d.exitTime<d.entryTime)d.exitTime+=864e5;d.notes=$('#fNotes').value;
+    d.pv=SYMBOLS[d.symbol];d.rValue=acct(d.accountId)?.rValue||0;
+  }
+  function upd(){
+    read();const p=$('#fPrev');
+    if(!isFinite(d.entry)||!isFinite(d.exit)||!d.qty){p.style.display='none';return}
+    p.style.display='';
+    const c=calc(d);
+    p.innerHTML=`<div><span>${t('points')}</span><b class="${cls(c.pts)}">${+c.pts.toFixed(2)}</b></div><div><span>${t('netPnl')}</span><b class="${cls(c.net)}">${money(c.net)}</b></div><div><span>R</span><b class="${cls(c.r)}">${rStr(c.r)}</b></div><div><span>${t('result')}</span><b><span class="badge ${c.res.toLowerCase()}">${t(c.res)}</span></b></div><div><span>${t('duration')}</span><b>${fmtDur(c.dur)}</b></div><div><span>${t('nyDate')}</span><b>${isFinite(d.entryTime)?c.date:'—'}</b></div>`;
+  }
+  ['#fAcc','#fSym','#fEn','#fEx','#fQty','#fDate'].forEach(s=>$(s).addEventListener('input',upd));
+  tbWire($('#fEt'),()=>upd());tbWire($('#fXt'),()=>upd());
+  $('#fCom').addEventListener('input',()=>{commTouched=true;upd()});
+  // stars
+  const starBox=$('#fStar');
+  const drawStar=v=>{starBox.innerHTML=starsHTML(v).replace(/^<span class="stars ">|<\/span>$/g,'');$('#fStarV').textContent=d.rating?d.rating:''};
+  starBox.className='stars input';drawStar(d.rating);
+  const starVal=e=>{const r=starBox.getBoundingClientRect();return Math.min(5,Math.max(.5,Math.ceil((e.clientX-r.left)/r.width*10)/2))};
+  starBox.onmousemove=e=>drawStar(starVal(e));starBox.onmouseleave=()=>drawStar(d.rating);
+  starBox.onclick=e=>{const v=starVal(e);d.rating=d.rating===v?0:v;drawStar(d.rating)};
+  // tags
+  function drawTags(){
+    $('#fTags').innerHTML=S.tags.map(tg=>`<span class="chip ${d.tags.includes(tg.id)?'on':''}" data-id="${tg.id}">${esc(tagName(tg.id))}</span>`).join('');
+    ov.querySelectorAll('#fTags .chip').forEach(c=>c.onclick=()=>{const id=c.dataset.id;d.tags=d.tags.includes(id)?d.tags.filter(x=>x!==id):[...d.tags,id];drawTags()});
+  }
+  drawTags();
+  $('#fTagNew').onkeydown=e=>{if(e.key!=='Enter')return;e.preventDefault();const n=e.target.value.trim();if(!n)return;
+    let tg=S.tags.find(x=>(tagName(x.id)||'').toLowerCase()===n.toLowerCase());
+    if(!tg){tg={id:uid(),name:n,builtin:null};S.tags.push(tg);save()}
+    if(!d.tags.includes(tg.id))d.tags.push(tg.id);e.target.value='';drawTags()};
+  // images
+  async function drawThumbs(){
+    for(const im of imgs)if(im.src===null)im.src=imgCache[im.id]??(imgCache[im.id]=await DB.get('images',im.id)||'');
+    $('#fThumbs').innerHTML=imgs.map((im,i)=>`<div class="thumb"><img src="${im.src}" data-i="${i}"><button class="rm" data-i="${i}">✕</button></div>`).join('');
+    ov.querySelectorAll('#fThumbs .rm').forEach(b=>b.onclick=()=>{imgs.splice(+b.dataset.i,1);drawThumbs()});
+    ov.querySelectorAll('#fThumbs img').forEach(m=>m.onclick=()=>lightbox(m.src));
+  }
+  const addFiles=files=>{[...files].filter(f=>f.type.startsWith('image/')).forEach(f=>{const r=new FileReader();r.onload=()=>{imgs.push({id:uid(),src:r.result,isNew:true});drawThumbs()};r.readAsDataURL(f)})};
+  const fileIn=document.getElementById('file-img');
+  $('#fDrop').onclick=()=>{fileIn.value='';fileIn.onchange=()=>addFiles(fileIn.files);fileIn.click()};
+  $('#fDrop').ondragover=e=>{e.preventDefault();e.currentTarget.classList.add('hover')};
+  $('#fDrop').ondragleave=e=>e.currentTarget.classList.remove('hover');
+  $('#fDrop').ondrop=e=>{e.preventDefault();e.currentTarget.classList.remove('hover');addFiles(e.dataTransfer.files)};
+  const onPaste=e=>{if(!document.body.contains(ov)){document.removeEventListener('paste',onPaste);return}
+    const files=[...(e.clipboardData?.items||[])].filter(i=>i.type.startsWith('image/')).map(i=>i.getAsFile());if(files.length){e.preventDefault();addFiles(files)}};
+  document.addEventListener('paste',onPaste);
+  drawThumbs();upd();
+  $('#fSave').onclick=async()=>{
+    read();const err=$('#fErr');
+    if(!isFinite(d.entry)||!isFinite(d.exit)||!d.qty)return err.textContent=t('errPrice');
+    if(!isFinite(d.entryTime)||!isFinite(d.exitTime)||d.exitTime<d.entryTime)return err.textContent=t('errTime');
+    for(const im of imgs)if(im.isNew){await DB.put('images',im.id,im.src);imgCache[im.id]=im.src}
+    const keep=imgs.map(i=>i.id);for(const id of origImgs)if(!keep.includes(id)){await DB.del('images',id);delete imgCache[id]}
+    d.images=keep;
+    const i=S.trades.findIndex(x=>x.id===d.id);if(i>=0)S.trades[i]=d;else S.trades.push(d);
+    await save();document.removeEventListener('paste',onPaste);closeModal(ov);
+    const c=calc(d);if(UI.period!=='all'){UI.anchor=c.date;UI.calMonth=c.date.slice(0,7)}
+    render();
+  };
+}
+/* ---------- accounts ---------- */
+function openAccountForm(existing){
+  const html=`<h2>${existing?t('editAccount'):(S.accounts.length?t('addAccount').replace('+ ',''):t('welcome'))}<button class="btn x">✕</button></h2>
+   <div class="grid"><div class="f span2"><label>${t('accName')}</label><input id="aN" placeholder="Lucid 50K Eval"></div>
+   <div class="f"><label>${t('startBal')} ($)</label><input id="aS" type="number" min="0" placeholder="50000"></div>
+   <div class="f"><label>${t('rValue')} ($)</label><input id="aR" type="number" min="0" placeholder="250"></div></div>
+   <div class="foot"><span class="neg" id="aErr" style="margin-right:auto"></span>${existing?`<button class="btn danger" id="aDel">${t('del')}</button>`:''}<button class="btn x">${t('cancel')}</button><button class="btn primary" id="aSave">${t('save')}</button></div>`;
+  const ov=openModal(html),$=s=>ov.querySelector(s);
+  if(existing){$('#aN').value=existing.name;$('#aS').value=existing.start;$('#aR').value=existing.rValue}
+  $('#aSave').onclick=async()=>{
+    const name=$('#aN').value.trim(),start=parseFloat($('#aS').value),rValue=parseFloat($('#aR').value);
+    if(!name||!(start>=0)||!(rValue>0))return $('#aErr').textContent=t('errAcc');
+    if(existing)Object.assign(existing,{name,start,rValue});
+    else{const a={id:uid(),name,start,rValue};S.accounts.push(a);if(S.accounts.length===1)S.settings.account=a.id}
+    await save();closeModal(ov);if(document.querySelector('#setList'))refreshSettings();render();
+  };
+  if(existing)$('#aDel').onclick=async()=>{if(!confirm(t('deleteAcc')))return;
+    for(const tr of S.trades.filter(x=>x.accountId===existing.id))for(const i of tr.images||[])await DB.del('images',i);
+    S.trades=S.trades.filter(x=>x.accountId!==existing.id);S.accounts=S.accounts.filter(a=>a!==existing);
+    if(S.settings.account===existing.id)S.settings.account='all';await save();closeModal(ov);refreshSettings();render()};
+}
+/* ---------- settings ---------- */
+function settingsBody(){
+  const custom=S.tags.filter(x=>!x.builtin);
+  return `<div class="sec" style="margin-top:0"><h4>${t('accounts')}</h4><div id="setList">${S.accounts.map(a=>`<div class="list-row"><b style="flex:1">${esc(a.name)}</b><span class="mono muted">${money(a.start,false)} · 1R ${money(a.rValue,false)}</span><button class="btn sm" data-acc="${a.id}">${t('edit')}</button></div>`).join('')}</div>
+    <button class="btn sm" id="sAdd" style="margin-top:8px">${t('addAccount')}</button></div>
+   <div class="sec grid"><div class="f"><label>${t('beThreshold')}</label><input id="sBe" type="number" step="0.05" min="0" value="${S.settings.be}"></div>
+    <div class="f span2"><label>${t('defComm')}</label><input id="sCom" type="number" step="0.01" min="0" value="${S.settings.commission}"></div></div>
+   <div class="sec"><h4>${t('customTags')}</h4>${custom.length?custom.map(tg=>`<span class="chip static">${esc(tg.name)} <a href="#" data-tag="${tg.id}" style="color:var(--red);text-decoration:none">✕</a></span>`).join(''):`<span class="muted">${t('noCustomTags')}</span>`}</div>
+   <div class="sec"><h4>${t('backup')}</h4><div class="bar"><button class="btn" id="sExp">${t('exportB')}</button><button class="btn" id="sImp">${t('importB')}</button><span class="muted">${t('lastBackup')}: ${S.settings.lastBackup?new Date(S.settings.lastBackup).toLocaleString():t('never')}</span></div>
+    <p class="muted" style="font-size:12px">${t('backupWarn')}</p></div>`;
+}
+let setOv=null;
+function openSettings(){
+  setOv=openModal(`<h2>${t('settings')}<button class="btn x">✕</button></h2><div id="setBody"></div>`);refreshSettings();
+}
+function refreshSettings(){
+  if(!setOv||!document.body.contains(setOv))return;const b=setOv.querySelector('#setBody');b.innerHTML=settingsBody();
+  b.querySelectorAll('[data-acc]').forEach(x=>x.onclick=()=>openAccountForm(acct(x.dataset.acc)));
+  b.querySelector('#sAdd').onclick=()=>openAccountForm();
+  b.querySelector('#sBe').onchange=e=>{S.settings.be=Math.max(0,parseFloat(e.target.value)||0);save();render()};
+  b.querySelector('#sCom').onchange=e=>{S.settings.commission=Math.max(0,parseFloat(e.target.value)||0);save()};
+  b.querySelectorAll('[data-tag]').forEach(x=>x.onclick=e=>{e.preventDefault();const id=x.dataset.tag;S.tags=S.tags.filter(tg=>tg.id!==id);S.trades.forEach(tr=>tr.tags=(tr.tags||[]).filter(i=>i!==id));save();refreshSettings();render()});
+  b.querySelector('#sExp').onclick=exportBackup;
+  b.querySelector('#sImp').onclick=()=>{const f=document.getElementById('file-import');f.value='';f.onchange=()=>importBackup(f.files[0]);f.click()};
+}
+async function exportBackup(){
+  S.settings.lastBackup=Date.now();await save();
+  const data={app:'trade-journal',version:1,exportedAt:new Date().toISOString(),state:S,images:await DB.all('images')};
+  const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([JSON.stringify(data)],{type:'application/json'}));
+  a.download=`trade-journal-backup-${nyDate(Date.now())}.json`;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),2000);
+  refreshSettings();render();
+}
+async function importBackup(file){
+  if(!file)return;
+  try{const data=JSON.parse(await file.text());if(data.app!=='trade-journal'||!data.state)throw new Error('bad file');
+    if(!confirm(t('importConfirm')))return;
+    await DB.clear('images');for(const[k,v]of Object.entries(data.images||{}))await DB.put('images',k,v);
+    for(const k in imgCache)delete imgCache[k];
+    S=data.state;ensureTags();await save();alert(t('importOk'));refreshSettings();render();
+  }catch(e){alert('Import failed: '+e.message)}
+}
+function ensureTags(){BUILTIN_TAGS.forEach(([k,zh])=>{if(!S.tags.some(x=>x.builtin===k))S.tags.push({id:'b_'+k,name:zh,builtin:k})})}
+/* ---------- boot ---------- */
+if('serviceWorker' in navigator&&location.protocol.startsWith('http'))navigator.serviceWorker.register('sw.js').catch(()=>{});
+(async()=>{
+  try{await DB.open();const st=await DB.get('kv','state');if(st)S=Object.assign(S,st,{settings:Object.assign(S.settings,st.settings)})}
+  catch(e){alert('Storage unavailable: '+e.message)}
+  ensureTags();
+  UI.anchor=nyDate(Date.now());UI.calMonth=UI.anchor.slice(0,7);UI.perfYear=+UI.anchor.slice(0,4);
+  document.documentElement.lang=S.settings.lang==='zh'?'zh':'en';
+  render({anim:true});
+  if(!S.accounts.length)openAccountForm();
+  let rt;window.addEventListener('resize',()=>{clearTimeout(rt);rt=setTimeout(()=>drawEquity(inPeriod(enriched())),150)});
+})();
+</script>
+</body>
+</html>
