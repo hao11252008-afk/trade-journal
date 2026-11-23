@@ -43,6 +43,16 @@ tr.trow{cursor:pointer}tr.trow:hover td{background:#171b21}
 .nowrap{white-space:nowrap}
 .tscroll{overflow-x:auto}
 tr.zero-n td{opacity:.45}
+.qrow{display:flex;align-items:center;gap:6px;font-size:11px;color:var(--muted);line-height:1.6}
+.qrow span:first-child{min-width:4.5em}
+.qgrid{display:grid;grid-template-columns:1fr 1fr;gap:20px}
+.qmat{table-layout:fixed}.qmat th{text-transform:none;letter-spacing:0;font-size:12px}
+.qcell{border:1px solid var(--line);border-radius:8px;text-align:center;padding:14px}
+.qcell.w{background:var(--green-bg)}.qcell.l{background:var(--red-bg)}
+.qe{font-size:18px;font-weight:700}
+.upd{margin:6px 4px 8px;padding:10px 12px;border-radius:10px;background:rgba(61,220,151,.12);border:1px solid rgba(61,220,151,.5);color:var(--green);cursor:pointer;font-size:13px;animation:fadeIn .4s ease-out}
+.upd small{display:block;color:var(--muted);font-size:11px}
+.ver{color:#4a5260;font-size:11px;padding:4px 12px}
 tr.zero-n td:last-child{opacity:1}
 .lown{font-family:inherit;font-size:10px;color:var(--gold);border:1px solid rgba(245,196,81,.4);border-radius:4px;padding:0 5px;margin-left:4px;vertical-align:middle}
 .rm-an{color:var(--muted)}.rm-an:hover{color:var(--red)}
@@ -190,6 +200,7 @@ svg text{fill:var(--muted);font-size:11px;font-family:var(--mono)}
   .grid,.kv{grid-template-columns:repeat(2,1fr)}.grid .span4{grid-column:span 2}
   .hide-sm{display:none}
   .stats{grid-template-columns:repeat(2,1fr)}
+  .qgrid{grid-template-columns:1fr}
   .pgrid{grid-template-columns:repeat(2,1fr)}
 }
 </style>
@@ -206,7 +217,7 @@ svg text{fill:var(--muted);font-size:11px;font-family:var(--mono)}
 const SYMBOLS={MNQ:2,NQ:20,MES:5,ES:50,MYM:0.5,YM:5,M2K:5,RTY:50,MGC:10,GC:100,MCL:100,CL:1000};
 const BUILTIN_TAGS=[['on_plan','按计划','On plan'],['off_plan','偏离计划','Off plan'],['focused','专注','Focused'],['calm','冷静','Calm'],['confident','自信','Confident'],['fomo','FOMO','FOMO'],['greedy','贪婪','Greedy'],['revenge','报复','Revenge']];
 const I18N={
-zh:{appSub:'交易日志',perf:'月度绩效',months:['1月','2月','3月','4月','5月','6月','7月','8月','9月','10月','11月','12月'],yearNet:'全年净盈亏',profitMonths:'盈利月份',bestMonth:'最好的月份',worstMonth:'最差的月份',noTradesMonth:'没有交易',future:'还没到',multiYear:'多年对照',fullYear:'全年',tradesUnit:'笔',addAnTag:'+ 添加标签',lowN:'样本少',tagPerf:'标签表现',expectancy:'期望值（R / 笔）',noAnTags:'还没选标签。点右上角「+ 添加标签」，例如 V1.0、V2.0、V3.0、FOMO、报复。',anHint:'期望值 = 平均每笔赚几 R，正数代表长期赚钱，负数代表长期亏钱。一笔交易有多个标签时会同时算进每个标签，所以各行加起来不等于总数。标「样本少」的标签少于 20 笔：数据还不够，先别下结论。',streaks:'最长连胜 / 最长连亏',curStreak:'目前',winStreak:'连胜',lossStreak:'连亏',overview:'总览',historyNav:'交易历史',analysis:'分析',recent:'最近 15 笔',viewAll:'查看全部 →',maxWin:'最大单笔盈利',maxLoss:'最大单笔亏损',any:'全部',price:'价格',reset:'清除筛选',model:'模型',avgR:'平均 R',totalR:'总 R',modelTitle:'模型表现',noModel:'未标模型',
+zh:{appSub:'交易日志',setupQ:'单子品质',execQ:'执行品质',quality:'品质',avgQuality:'平均品质',unrated:'未评分',qualTitle:'品质分析',qualMatrix:'单子 × 执行',goodSetup:'好单子（≥4★）',weakSetup:'普通单子（<4★）',goodExec:'执行好（≥4★）',weakExec:'执行差（<4★）',qualHint:'只统计两项都有评分的交易。好单子 + 执行好但亏损，是正常的成本；执行差的那一栏，才是要改进的地方。',newVersion:'新版本已就绪',clickUpdate:'点击更新',version:'版本',perf:'月度绩效',months:['1月','2月','3月','4月','5月','6月','7月','8月','9月','10月','11月','12月'],yearNet:'全年净盈亏',profitMonths:'盈利月份',bestMonth:'最好的月份',worstMonth:'最差的月份',noTradesMonth:'没有交易',future:'还没到',multiYear:'多年对照',fullYear:'全年',tradesUnit:'笔',addAnTag:'+ 添加标签',lowN:'样本少',tagPerf:'标签表现',expectancy:'期望值（R / 笔）',noAnTags:'还没选标签。点右上角「+ 添加标签」，例如 V1.0、V2.0、V3.0、FOMO、报复。',anHint:'期望值 = 平均每笔赚几 R，正数代表长期赚钱，负数代表长期亏钱。一笔交易有多个标签时会同时算进每个标签，所以各行加起来不等于总数。标「样本少」的标签少于 20 笔：数据还不够，先别下结论。',streaks:'最长连胜 / 最长连亏',curStreak:'目前',winStreak:'连胜',lossStreak:'连亏',overview:'总览',historyNav:'交易历史',analysis:'分析',recent:'最近 15 笔',viewAll:'查看全部 →',maxWin:'最大单笔盈利',maxLoss:'最大单笔亏损',any:'全部',price:'价格',reset:'清除筛选',model:'模型',avgR:'平均 R',totalR:'总 R',modelTitle:'模型表现',noModel:'未标模型',
 modelHint:'统计名称以 V 开头的标签（例如 V1.0、V2.0、V3.0），跟着上面选的时间范围和账户。少于 20 笔的分组以淡色显示：样本还不够，先别下结论。',noModelTags:'还没有 V 开头的标签。在交易里加上 V1.0、V2.0、V3.0 标签，这里就会出现统计。',newTrade:'+ 新交易',allAccounts:'全部账户',settings:'设置',all:'全部',year:'年',month:'月',week:'周',day:'日',
 netPnl:'净盈亏',winRate:'胜率',exclBE:'不含保本',inclBE:'含保本',trades:'交易数',wbl:'盈利 / 保本 / 亏损',avgWin:'平均盈利',avgLoss:'平均亏损',pf:'盈亏因子',avgDur:'平均持仓',avgRating:'平均评分',
 equity:'成长曲线',calendar:'交易日历',history:'交易历史',weekTotal:'周合计',date:'日期',symbol:'品种',count:'笔数',duration:'持仓时间',win:'胜率',noTrades:'这段时间没有交易',
@@ -219,7 +230,7 @@ importConfirm:'导入会覆盖现在所有数据，确定吗？',backupWarn:'数
 welcome:'欢迎！先建立你的第一个账户。',editAccount:'编辑账户',deleteAcc:'删除这个账户和它的所有交易？',errPrice:'请填写进场价、出场价和手数',errTime:'请填写日期、进场时间和出场时间（例如 22:46:00）',tradeDate:'日期（本地）',errAcc:'请填写账户名称、起始资金和 1R 金额',
 cumPnl:'累计盈亏',newTradeTitle:'新交易',editTradeTitle:'编辑交易',tradeDetail:'交易详情',dayTrades:'当日交易',noNotes:'没有写复盘',contracts:'手',importOk:'导入完成',exported:'已导出',
 weekdays:['周日','周一','周二','周三','周四','周五','周六'],monthFmt:(y,m)=>`${y}年${m}月`,startPoint:'起点'},
-en:{appSub:'Trade Journal',perf:'Monthly',months:['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'],yearNet:'Year net P&L',profitMonths:'Profitable months',bestMonth:'Best month',worstMonth:'Worst month',noTradesMonth:'No trades',future:'Upcoming',multiYear:'Year by year',fullYear:'Year',tradesUnit:'trades',addAnTag:'+ Add tag',lowN:'low n',tagPerf:'Tag performance',expectancy:'Expectancy (R / trade)',noAnTags:'No tags selected. Use “+ Add tag”, e.g. V1.0, V2.0, V3.0, FOMO, Revenge.',anHint:'Expectancy = average R per trade: positive means it makes money long-term, negative means it loses. A trade with several tags counts in each, so rows do not add up to the total. “Low n” marks tags with fewer than 20 trades: not enough data yet.',streaks:'Max win / loss streak',curStreak:'Current',winStreak:'win streak',lossStreak:'loss streak',overview:'Overview',historyNav:'Trade History',analysis:'Analysis',recent:'Last 15 trades',viewAll:'View all →',maxWin:'Largest win',maxLoss:'Largest loss',any:'All',price:'Price',reset:'Clear filters',model:'Model',avgR:'Avg R',totalR:'Total R',modelTitle:'Model performance',noModel:'No model tag',
+en:{appSub:'Trade Journal',setupQ:'Setup quality',execQ:'Execution',quality:'Quality',avgQuality:'Avg quality',unrated:'Unrated',qualTitle:'Quality analysis',qualMatrix:'Setup × Execution',goodSetup:'Good setup (≥4★)',weakSetup:'Weaker setup (<4★)',goodExec:'Good execution (≥4★)',weakExec:'Weak execution (<4★)',qualHint:'Only trades with both ratings count. Good setup + good execution that lost is a normal cost; the weak-execution column is where to improve.',newVersion:'New version ready',clickUpdate:'Click to update',version:'Version',perf:'Monthly',months:['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'],yearNet:'Year net P&L',profitMonths:'Profitable months',bestMonth:'Best month',worstMonth:'Worst month',noTradesMonth:'No trades',future:'Upcoming',multiYear:'Year by year',fullYear:'Year',tradesUnit:'trades',addAnTag:'+ Add tag',lowN:'low n',tagPerf:'Tag performance',expectancy:'Expectancy (R / trade)',noAnTags:'No tags selected. Use “+ Add tag”, e.g. V1.0, V2.0, V3.0, FOMO, Revenge.',anHint:'Expectancy = average R per trade: positive means it makes money long-term, negative means it loses. A trade with several tags counts in each, so rows do not add up to the total. “Low n” marks tags with fewer than 20 trades: not enough data yet.',streaks:'Max win / loss streak',curStreak:'Current',winStreak:'win streak',lossStreak:'loss streak',overview:'Overview',historyNav:'Trade History',analysis:'Analysis',recent:'Last 15 trades',viewAll:'View all →',maxWin:'Largest win',maxLoss:'Largest loss',any:'All',price:'Price',reset:'Clear filters',model:'Model',avgR:'Avg R',totalR:'Total R',modelTitle:'Model performance',noModel:'No model tag',
 modelHint:'Groups trades by tags starting with V (e.g. V1.0, V2.0, V3.0), using the period and account above. Groups with fewer than 20 trades are dimmed: not enough data to draw conclusions yet.',noModelTags:'No tags starting with V yet. Add V1.0, V2.0, V3.0 tags to your trades and stats will appear here.',newTrade:'+ New Trade',allAccounts:'All accounts',settings:'Settings',all:'All',year:'Year',month:'Month',week:'Week',day:'Day',
 netPnl:'Net P&L',winRate:'Win rate',exclBE:'excl. BE',inclBE:'incl. BE',trades:'Trades',wbl:'Win / BE / Loss',avgWin:'Avg win',avgLoss:'Avg loss',pf:'Profit factor',avgDur:'Avg duration',avgRating:'Avg rating',
 equity:'Equity curve',calendar:'Trading calendar',history:'Trading history',weekTotal:'Week',date:'Date',symbol:'Symbol',count:'Trades',duration:'Duration',win:'Win %',noTrades:'No trades in this period',
@@ -235,7 +246,7 @@ weekdays:['Sun','Mon','Tue','Wed','Thu','Fri','Sat'],monthFmt:(y,m)=>new Date(Da
 };
 /* ---------- state ---------- */
 let S={settings:{lang:'zh',unit:'$',account:'all',be:0.1,commission:1,lastBackup:null},accounts:[],tags:[],trades:[]};
-const UI={page:'overview',period:'month',anchor:null,calMonth:null,f:{res:'all',dir:'all',tag:'all',rating:'0'}};
+const UI={page:'overview',period:'month',anchor:null,calMonth:null,f:{res:'all',dir:'all',tag:'all',sq:'0',eq:'0'}};
 const t=k=>I18N[S.settings.lang][k]??k;
 const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,8);
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -329,13 +340,13 @@ function pctBadge(list){
 function stats(list){
   const n=list.length,W=list.filter(x=>x.c.res==='W'),L=list.filter(x=>x.c.res==='L'),B=n-W.length-L.length;
   const sum=(a,f)=>a.reduce((s,x)=>s+f(x),0);
-  const gw=sum(W,x=>x.c.net),gl=sum(L,x=>x.c.net),rated=list.filter(x=>x.tr.rating>0);
+  const gw=sum(W,x=>x.c.net),gl=sum(L,x=>x.c.net),rs=list.filter(x=>x.tr.setupQ>0),re=list.filter(x=>x.tr.execQ>0);
   return{n,w:W.length,l:L.length,b:B,net:sum(list,x=>x.c.net),r:sum(list,x=>x.c.r),
     wr:W.length+L.length?W.length/(W.length+L.length):null,wrAll:n?W.length/n:null,
     avgW:W.length?gw/W.length:null,avgWR:W.length?sum(W,x=>x.c.r)/W.length:null,
     avgL:L.length?gl/L.length:null,avgLR:L.length?sum(L,x=>x.c.r)/L.length:null,
     pf:gl?gw/Math.abs(gl):(gw>0?Infinity:null),dur:n?sum(list,x=>x.c.dur)/n:null,
-    rating:rated.length?sum(rated,x=>x.tr.rating)/rated.length:null,
+    setupAvg:rs.length?sum(rs,x=>x.tr.setupQ)/rs.length:null,execAvg:re.length?sum(re,x=>x.tr.execQ)/re.length:null,
     ...streaks(list),
     maxW:W.length?W.reduce((m,x)=>x.c.net>m.c.net?x:m):null,maxL:L.length?L.reduce((m,x)=>x.c.net<m.c.net?x:m):null};
 }
@@ -345,6 +356,7 @@ function streaks(list){
   return{mw,ml,cur:cw?{t:'W',n:cw}:cl?{t:'L',n:cl}:null};
 }
 /* ---------- animation ---------- */
+const APP_VERSION='1.3.0';
 const reduceMotion=window.matchMedia&&matchMedia('(prefers-reduced-motion: reduce)').matches;
 const NUMF={money:v=>money(v),R:v=>rStr(v),pct:v=>(v*100).toFixed(1)+'%',int:v=>String(Math.round(v))};
 function num(v,f){return `<span class="cnt" data-v="${v}" data-f="${f}">${NUMF[f](v)}</span>`}
@@ -394,6 +406,7 @@ function starsHTML(v,size=''){
   const w=size==='sm'?14:22;
   return `<span class="stars ${size}"><span class="row" style="color:#323843">${STAR.repeat(5)}</span><span class="row fg" style="color:var(--gold);width:${v*w}px">${STAR.repeat(5)}</span></span>`;
 }
+function qualHTML(tr){return `<div class="qrow"><span>${t('setupQ')}</span>${starsHTML(tr.setupQ||0,'sm')}</div><div class="qrow"><span>${t('execQ')}</span>${starsHTML(tr.execQ||0,'sm')}</div>`}
 /* ---------- render ---------- */
 function renderTop(){
   const opts=[`<option value="all">${t('allAccounts')}</option>`].concat(S.accounts.map(a=>`<option value="${a.id}" ${S.settings.account===a.id?'selected':''}>${esc(a.name)}</option>`)).join('');
@@ -424,10 +437,13 @@ function renderSide(){
    <div class="brand">TRADE JOURNAL<small>${t('appSub')}</small></div>
    ${nav('overview',t('overview'))}${nav('history',t('historyNav'))}${nav('perf',t('perf'))}${nav('analysis',t('analysis'))}
    <div style="flex:1"></div>
+   ${UI.newVer?`<div class="upd" id="sideUpd">🔄 ${t('newVersion')}<small>${t('clickUpdate')} · v${esc(UI.newVer)}</small></div>`:''}
    <div class="nav" id="sideSet">${ICONS.settings}<span>${t('settings')}</span></div>
-   <div class="nav" id="sideBk">${ICONS.backup}<span>${t('exportB')}<small class="muted" style="display:block;font-size:11px">${t('lastBackup')}: ${lb?new Date(lb).toLocaleDateString():t('never')}</small></span></div>`;
+   <div class="nav" id="sideBk">${ICONS.backup}<span>${t('exportB')}<small class="muted" style="display:block;font-size:11px">${t('lastBackup')}: ${lb?new Date(lb).toLocaleDateString():t('never')}</small></span></div>
+   <div class="ver">${t('version')} ${APP_VERSION}</div>`;
   document.querySelectorAll('#side [data-page]').forEach(n=>n.onclick=()=>{UI.page=n.dataset.page;window.scrollTo(0,0);render({anim:true})});
   document.getElementById('sideSet').onclick=openSettings;
+  const su=document.getElementById('sideUpd');if(su)su.onclick=()=>location.reload();
   document.getElementById('sideBk').onclick=exportBackup;
 }
 function periodBar(){
@@ -466,7 +482,7 @@ function render(opts={}){
   on('yPrev',()=>{UI.perfYear--;render({anim:true})});on('yNext',()=>{UI.perfYear++;render({anim:true})});
   app.querySelectorAll('[data-year]').forEach(l=>l.onclick=e=>{e.preventDefault();UI.perfYear=+l.dataset.year;render({anim:true})});
   if(UI.page==='perf'){app.querySelectorAll('[data-month]').forEach(c=>c.onclick=()=>{const k=c.dataset.month;UI.page='overview';UI.period='month';UI.anchor=k+'-01';UI.calMonth=k;window.scrollTo(0,0);render({anim:true})});if(A)countUp(app)}
-  on('fReset',()=>{UI.f={res:'all',dir:'all',tag:'all',rating:'0'};render()});
+  on('fReset',()=>{UI.f={res:'all',dir:'all',tag:'all',sq:'0',eq:'0'};render()});
   if(UI.page==='overview'){drawEquity(list,A);if(A)countUp(app)}
 }
 function overviewPage(all,list,calAnim){
@@ -478,7 +494,7 @@ function overviewPage(all,list,calAnim){
     <div class="stat"><div class="k">${t('winRate')}</div><div class="v">${st.wr===null?'—':num(st.wr,'pct')}</div><div class="s">${t('exclBE')} · ${t('inclBE')} ${st.wrAll===null?'—':(st.wrAll*100).toFixed(1)+'%'}</div></div>
     <div class="stat"><div class="k">${t('wbl')}</div><div class="v"><span class="pos">${num(st.w,'int')}</span> / <span class="zero">${num(st.b,'int')}</span> / <span class="neg">${num(st.l,'int')}</span></div><div class="s">${t('trades')}: ${st.n}</div></div>
     <div class="stat"><div class="k">${t('avgWin')} / ${t('avgLoss')}</div><div class="v" style="font-size:17px"><span class="pos">${st.avgW===null?'—':cv(st.avgW,st.avgWR)}</span> / <span class="neg">${st.avgL===null?'—':cv(st.avgL,st.avgLR)}</span></div><div class="s">${t('pf')}: ${st.pf===null?'—':st.pf===Infinity?'∞':st.pf.toFixed(2)}</div></div>
-    <div class="stat"><div class="k">${t('maxWin')} / ${t('maxLoss')}</div><div class="v" style="font-size:17px"><span class="pos">${st.maxW?cv(st.maxW.c.net,st.maxW.c.r):'—'}</span> / <span class="neg">${st.maxL?cv(st.maxL.c.net,st.maxL.c.r):'—'}</span></div><div class="s">${t('avgRating')}: ${st.rating===null?'—':st.rating.toFixed(1)+' ★'}</div></div>
+    <div class="stat"><div class="k">${t('maxWin')} / ${t('maxLoss')}</div><div class="v" style="font-size:17px"><span class="pos">${st.maxW?cv(st.maxW.c.net,st.maxW.c.r):'—'}</span> / <span class="neg">${st.maxL?cv(st.maxL.c.net,st.maxL.c.r):'—'}</span></div><div class="s">${t('setupQ')} ${st.setupAvg===null?'—':st.setupAvg.toFixed(1)+'★'} · ${t('execQ')} ${st.execAvg===null?'—':st.execAvg.toFixed(1)+'★'}</div></div>
     <div class="stat"><div class="k">${t('streaks')}</div><div class="v"><span class="pos">${num(st.mw,'int')}</span> / <span class="neg">${num(st.ml,'int')}</span></div><div class="s">${t('curStreak')}: ${st.cur?`<span class="${st.cur.t==='W'?'pos':'neg'}">${st.cur.n} ${t(st.cur.t==='W'?'winStreak':'lossStreak')}</span>`:'—'}</div></div>
   </div>
   <div class="card"><h3>${t('equity')}</h3><div id="eq"></div></div>
@@ -511,7 +527,7 @@ function calendarHTML(all,anim=false){
 function tradeTable(rows){
   if(!rows.length)return `<div class="empty-msg">${t('noTrades')}</div>`;
   const multi=S.settings.account==='all'&&S.accounts.length>1;
-  let h=`<div class="tscroll"><table><thead><tr><th>${t('date')}</th><th>${t('time')}</th><th>${t('symbol')}</th><th>${t('direction')}</th><th class="hide-sm">${t('price')}</th><th class="hide-sm">${t('duration')}</th><th>${t('netPnl')}</th><th>${t('result')}</th><th class="hide-sm">${t('rating')}</th><th class="hide-sm">${t('tags')}</th></tr></thead><tbody>`;
+  let h=`<div class="tscroll"><table><thead><tr><th>${t('date')}</th><th>${t('time')}</th><th>${t('symbol')}</th><th>${t('direction')}</th><th class="hide-sm">${t('price')}</th><th class="hide-sm">${t('duration')}</th><th>${t('netPnl')}</th><th>${t('result')}</th><th class="hide-sm">${t('quality')}</th><th class="hide-sm">${t('tags')}</th></tr></thead><tbody>`;
   rows.forEach(x=>{const tr=x.tr;
     h+=`<tr class="trow" data-id="${tr.id}"><td class="mono nowrap">${x.c.date} <span class="muted">${weekday(x.c.date)}</span>${multi&&acct(tr.accountId)?`<div class="muted" style="font-size:11px">${esc(acct(tr.accountId).name)}</div>`:''}</td>
      <td class="mono nowrap muted">${hms(tr.entryTime)} → ${hms(tr.exitTime)}</td>
@@ -521,15 +537,15 @@ function tradeTable(rows){
      <td class="mono nowrap hide-sm">${fmtDur(x.c.dur)}</td>
      <td class="mono nowrap ${cls(x.c.net)}"><b>${val(x.c.net,x.c.r)}</b><div style="font-size:11px;opacity:.75">${S.settings.unit==='R'?money(x.c.net):rStr(x.c.r)}</div></td>
      <td><span class="badge ${x.c.res.toLowerCase()}">${t(x.c.res)}</span></td>
-     <td class="hide-sm nowrap">${starsHTML(tr.rating||0,'sm')}</td>
+     <td class="hide-sm nowrap">${qualHTML(tr)}</td>
      <td class="hide-sm">${tagChips(tr.tags)}</td></tr>`});
   return h+'</tbody></table></div>';
 }
 function historyPage(list){
   const f=UI.f;
-  let rows=list.filter(x=>(f.res==='all'||x.c.res===f.res)&&(f.dir==='all'||x.tr.dir===f.dir)&&(f.tag==='all'||(x.tr.tags||[]).includes(f.tag))&&((x.tr.rating||0)>=+f.rating));
+  let rows=list.filter(x=>(f.res==='all'||x.c.res===f.res)&&(f.dir==='all'||x.tr.dir===f.dir)&&(f.tag==='all'||(x.tr.tags||[]).includes(f.tag))&&((x.tr.setupQ||0)>=+f.sq)&&((x.tr.execQ||0)>=+f.eq));
   rows.sort((a,b)=>b.tr.entryTime-a.tr.entryTime);
-  const st=stats(rows),active=f.res!=='all'||f.dir!=='all'||f.tag!=='all'||f.rating!=='0';
+  const st=stats(rows),active=f.res!=='all'||f.dir!=='all'||f.tag!=='all'||f.sq!=='0'||f.eq!=='0';
   const sel=(k,opts)=>`<select class="btn" data-f="${k}">${opts.map(([v,l])=>`<option value="${v}" ${f[k]===v?'selected':''}>${esc(l)}</option>`).join('')}</select>`;
   const any=t('any');
   return `${periodBar()}
@@ -537,7 +553,7 @@ function historyPage(list){
     <label>${t('result')} ${sel('res',[['all',any],['W',t('W')],['B',t('B')],['L',t('L')]])}</label>
     <label>${t('direction')} ${sel('dir',[['all',any],['long',t('long')],['short',t('short')]])}</label>
     <label>${t('tags')} ${sel('tag',[['all',any]].concat(S.tags.map(tg=>[tg.id,tagName(tg.id)])))}</label>
-    <label>${t('rating')} ${sel('rating',[['0',any]].concat([5,4.5,4,3.5,3,2,1].map(v=>[String(v),'≥ '+v+' ★'])))}</label>
+    ${['sq','eq'].map(k=>`<label>${t(k==='sq'?'setupQ':'execQ')} ${sel(k,[['0',any]].concat([5,4.5,4,3.5,3,2,1].map(v=>[String(v),'≥ '+v+' ★'])))}</label>`).join('')}
     ${active?`<button class="btn sm" id="fReset">${t('reset')}</button>`:''}
     <div class="fsum"><span>${t('trades')} <b>${st.n}</b></span><span>${t('winRate')} <b>${st.wr===null?'—':(st.wr*100).toFixed(1)+'%'}</b></span><span>${t('netPnl')} <b class="${cls(st.net)}">${val(st.net,st.r)}</b></span></div>
   </div>
@@ -590,6 +606,23 @@ function perfPage(all,anim){
   <div class="pgrid">${cards}</div>
   <div class="card"><h3>${t('multiYear')}</h3>${yt}</div>`;
 }
+function qualityCard(list){
+  const B=[['4.5–5 ★',v=>v>=4.5],['3.5–4 ★',v=>v>=3.5&&v<4.5],['2.5–3 ★',v=>v>=2.5&&v<3.5],['0.5–2 ★',v=>v>0&&v<2.5],[t('unrated'),v=>!v]];
+  const row=(label,rows)=>{const s=stats(rows),e=s.n?s.r/s.n:null;
+    return `<tr><td class="nowrap">${label}</td><td class="mono">${s.n}${s.n&&s.n<20?` <span class="lown">${t('lowN')}</span>`:''}</td><td class="mono"><span class="pos">${s.w}</span> / <span class="zero">${s.b}</span> / <span class="neg">${s.l}</span></td><td class="mono">${s.wr===null?'—':(s.wr*100).toFixed(1)+'%'}</td><td class="mono ${e===null?'':cls(e)}"><b>${e===null?'—':rStr(e)}</b></td><td class="mono ${cls(s.r)}">${rStr(s.r)}</td></tr>`};
+  const tbl=key=>`<div class="tscroll"><table><thead><tr><th>${t(key)}</th><th>${t('trades')}</th><th>${t('wbl')}</th><th>${t('winRate')}</th><th>${t('expectancy')}</th><th>${t('totalR')}</th></tr></thead><tbody>${
+    B.map(([l,f])=>{const rows=list.filter(x=>f(x.tr[key]||0));return rows.length||l!==t('unrated')?row(l,rows):''}).join('')}</tbody></table></div>`;
+  const both=list.filter(x=>x.tr.setupQ>0&&x.tr.execQ>0);
+  const cell=(gs,ge)=>{const rows=both.filter(x=>(x.tr.setupQ>=4)===gs&&(x.tr.execQ>=4)===ge),s=stats(rows),e=s.n?s.r/s.n:null;
+    return `<td class="qcell ${e===null?'':e>0?'w':e<0?'l':''}"><div class="mono qe ${e===null?'muted':cls(e)}">${e===null?'—':rStr(e)}</div><div class="muted" style="font-size:12px">${s.n} ${t('tradesUnit')}${s.wr===null?'':' · '+t('winRate')+' '+(s.wr*100).toFixed(0)+'%'}</div></td>`};
+  return `<div class="card"><h3>${t('qualTitle')}</h3>
+    <div class="qgrid"><div>${tbl('setupQ')}</div><div>${tbl('execQ')}</div></div>
+    <h4 class="muted" style="margin:18px 0 8px;font-size:12px;letter-spacing:.08em">${t('qualMatrix')} · ${t('expectancy')}</h4>
+    <div class="tscroll"><table class="qmat"><thead><tr><th></th><th>${t('goodExec')}</th><th>${t('weakExec')}</th></tr></thead><tbody>
+      <tr><th>${t('goodSetup')}</th>${cell(true,true)}${cell(true,false)}</tr>
+      <tr><th>${t('weakSetup')}</th>${cell(false,true)}${cell(false,false)}</tr></tbody></table></div>
+    <p class="muted" style="font-size:12px;margin:12px 0 0">${t('qualHint')}</p></div>`;
+}
 function anTagIds(){
   if(!Array.isArray(S.settings.anTags))
     S.settings.anTags=S.tags.filter(tg=>!tg.builtin&&/^v\s*\d/i.test(tg.name)).sort((a,b)=>a.name.localeCompare(b.name,undefined,{numeric:true})).map(tg=>tg.id);
@@ -615,7 +648,7 @@ function analysisPage(list){
       <td><div class="rbar"><div class="${s.r>=0?'p':'n'}" style="width:${w}%"></div></div></td>
       <td><button class="btn sm rm-an" data-rm="${g.id}" title="${t('del')}">✕</button></td></tr>`}).join('')+`</tbody></table></div>`;
   }
-  return `${periodBar()}<div class="card"><div class="bar" style="margin-bottom:12px"><h3 style="margin:0;margin-right:auto">${t('tagPerf')}</h3>${picker}</div>${body}<p class="muted" style="font-size:12px;margin:12px 0 0">${t('anHint')}</p></div>`;
+  return `${periodBar()}${qualityCard(list)}<div class="card"><div class="bar" style="margin-bottom:12px"><h3 style="margin:0;margin-right:auto">${t('tagPerf')}</h3>${picker}</div>${body}<p class="muted" style="font-size:12px;margin:12px 0 0">${t('anHint')}</p></div>`;
 }
 function drawEquity(list,anim=false){
   const box=document.getElementById('eq');if(!box)return;
@@ -669,7 +702,7 @@ function openDay(d){
      ${tr.images?.length?`<img class="tb" data-img="${tr.images[0]}">`:'<div class="tb"></div>'}
      <div class="mid"><div><span class="dir ${tr.dir}">${t(tr.dir)}</span> <span class="mono">${tr.qty} ${tr.symbol} · ${tr.entry} → ${tr.exit}</span></div>
        <div class="muted mono" style="font-size:12px">${hms(tr.entryTime)} → ${hms(tr.exitTime)} · ${fmtDur(x.c.dur)}${S.settings.account==='all'&&acct(tr.accountId)?' · '+esc(acct(tr.accountId).name):''}</div>
-       <div style="margin-top:4px">${starsHTML(tr.rating||0,'sm')} ${tagChips(tr.tags)}</div></div>
+       <div style="margin-top:4px;display:flex;gap:14px;flex-wrap:wrap;align-items:center">${qualHTML(tr)} ${tagChips(tr.tags)}</div></div>
      <div style="text-align:right"><div class="mono ${cls(x.c.net)}" style="font-size:17px;font-weight:700">${val(x.c.net,x.c.r)}</div><span class="badge ${x.c.res.toLowerCase()}">${t(x.c.res)}</span></div></div>`}).join('')}`;
   const ov=openModal(html);
   ov.querySelectorAll('.tcard').forEach(c=>c.onclick=()=>openDetail(c.dataset.id));
@@ -692,7 +725,8 @@ function openDetail(id){
     <div><span>${t('entryTime')}</span><b>${hms(tr.entryTime)}</b></div>
     <div><span>${t('exitTime')}</span><b>${hms(tr.exitTime)}</b></div>
     <div><span>${t('duration')}</span><b>${fmtDur(c.dur)}</b></div>
-    <div><span>${t('rating')}</span>${starsHTML(tr.rating||0,'sm')} <b>${tr.rating||0}</b></div>
+    <div><span>${t('setupQ')}</span>${starsHTML(tr.setupQ||0,'sm')} <b>${tr.setupQ||0}</b></div>
+    <div><span>${t('execQ')}</span>${starsHTML(tr.execQ||0,'sm')} <b>${tr.execQ||0}</b></div>
    </div>
    ${tr.tags?.length?`<div class="sec"><h4>${t('tags')}</h4>${tagChips(tr.tags)}</div>`:''}
    <div class="sec"><h4>${t('review')}</h4><div class="notes">${tr.notes?esc(tr.notes):`<span class="muted">${t('noNotes')}</span>`}</div></div>
@@ -709,7 +743,7 @@ function openDetail(id){
 function openTradeForm(existing){
   const acc0=existing?.accountId||(S.settings.account!=='all'?S.settings.account:S.accounts[0].id);
   const now=Date.now();
-  const d=existing?JSON.parse(JSON.stringify(existing)):{id:uid(),accountId:acc0,symbol:'MNQ',dir:'long',entry:'',exit:'',qty:1,commission:S.settings.commission,entryTime:now,exitTime:now,rating:0,tags:[],notes:'',images:[]};
+  const d=existing?JSON.parse(JSON.stringify(existing)):{id:uid(),accountId:acc0,symbol:'MNQ',dir:'long',entry:'',exit:'',qty:1,commission:S.settings.commission,entryTime:now,exitTime:now,setupQ:0,execQ:0,tags:[],notes:'',images:[]};
   const origImgs=[...(existing?.images||[])];
   let imgs=(d.images||[]).map(id=>({id,src:null}));let commTouched=!!existing;
   const accOpts=S.accounts.map(a=>`<option value="${a.id}">${esc(a.name)}</option>`).join('');
@@ -727,7 +761,8 @@ function openTradeForm(existing){
     <div class="f"><label>${t('exitTime')}</label>${timeBoxHTML('fXt')}</div>
     <div class="span4 muted" style="font-size:12px;margin-top:-6px">${t('localTime')}</div>
     <div class="span4 preview" id="fPrev"></div>
-    <div class="f span4"><label>${t('rating')}</label><span class="stars input" id="fStar"></span> <span class="mono" id="fStarV"></span></div>
+    <div class="f span2"><label>${t('setupQ')}</label><span class="stars input" id="fStarS"></span> <span class="mono" id="fStarSV"></span></div>
+    <div class="f span2"><label>${t('execQ')}</label><span class="stars input" id="fStarE"></span> <span class="mono" id="fStarEV"></span></div>
     <div class="f span4"><label>${t('tags')}</label><div id="fTags"></div><input id="fTagNew" placeholder="${t('addTag')}" style="margin-top:6px;max-width:320px"></div>
     <div class="f span4"><label>${t('review')}</label><textarea id="fNotes"></textarea></div>
     <div class="f span4"><label>${t('images')}</label><div class="drop" id="fDrop">${t('dropImages')}</div><div class="thumbs" id="fThumbs"></div></div>
@@ -758,12 +793,13 @@ function openTradeForm(existing){
   tbWire($('#fEt'),()=>upd());tbWire($('#fXt'),()=>upd());
   $('#fCom').addEventListener('input',()=>{commTouched=true;upd()});
   // stars
-  const starBox=$('#fStar');
-  const drawStar=v=>{starBox.innerHTML=starsHTML(v).replace(/^<span class="stars ">|<\/span>$/g,'');$('#fStarV').textContent=d.rating?d.rating:''};
-  starBox.className='stars input';drawStar(d.rating);
-  const starVal=e=>{const r=starBox.getBoundingClientRect();return Math.min(5,Math.max(.5,Math.ceil((e.clientX-r.left)/r.width*10)/2))};
-  starBox.onmousemove=e=>drawStar(starVal(e));starBox.onmouseleave=()=>drawStar(d.rating);
-  starBox.onclick=e=>{const v=starVal(e);d.rating=d.rating===v?0:v;drawStar(d.rating)};
+  const wireStar=(boxSel,valSel,key)=>{const box=$(boxSel);
+    const draw=v=>{box.innerHTML=starsHTML(v).replace(/^<span class="stars ">|<\/span>$/g,'');$(valSel).textContent=d[key]?d[key]:''};
+    const at=e=>{const r=box.getBoundingClientRect();return Math.min(5,Math.max(.5,Math.ceil((e.clientX-r.left)/r.width*10)/2))};
+    box.className='stars input';draw(d[key]||0);
+    box.onmousemove=e=>draw(at(e));box.onmouseleave=()=>draw(d[key]||0);
+    box.onclick=e=>{const v=at(e);d[key]=d[key]===v?0:v;draw(d[key])}};
+  wireStar('#fStarS','#fStarSV','setupQ');wireStar('#fStarE','#fStarEV','execQ');
   // tags
   function drawTags(){
     $('#fTags').innerHTML=S.tags.map(tg=>`<span class="chip ${d.tags.includes(tg.id)?'on':''}" data-id="${tg.id}">${esc(tagName(tg.id))}</span>`).join('');
@@ -863,20 +899,31 @@ async function importBackup(file){
     if(!confirm(t('importConfirm')))return;
     await DB.clear('images');for(const[k,v]of Object.entries(data.images||{}))await DB.put('images',k,v);
     for(const k in imgCache)delete imgCache[k];
-    S=data.state;ensureTags();await save();alert(t('importOk'));refreshSettings();render();
+    S=data.state;ensureTags();migrate();await save();alert(t('importOk'));refreshSettings();render();
   }catch(e){alert('Import failed: '+e.message)}
 }
+function migrate(){S.trades.forEach(tr=>{if(tr.setupQ===undefined){tr.setupQ=tr.rating||0;tr.execQ=tr.execQ||0;delete tr.rating}})}
 function ensureTags(){BUILTIN_TAGS.forEach(([k,zh])=>{if(!S.tags.some(x=>x.builtin===k))S.tags.push({id:'b_'+k,name:zh,builtin:k})})}
+/* ---------- update check ---------- */
+const verNum=v=>String(v).split('.').map(n=>+n||0).reduce((a,n)=>a*1000+n,0);
+async function checkUpdate(){
+  if(!location.protocol.startsWith('http'))return;
+  try{const r=await fetch('version.json?t='+Date.now(),{cache:'no-store'});if(!r.ok)return;const{version}=await r.json();
+    if(version&&verNum(version)>verNum(APP_VERSION)&&UI.newVer!==version){UI.newVer=version;renderSide()}}catch(e){}
+}
 /* ---------- boot ---------- */
 if('serviceWorker' in navigator&&location.protocol.startsWith('http'))navigator.serviceWorker.register('sw.js').catch(()=>{});
 (async()=>{
   try{await DB.open();const st=await DB.get('kv','state');if(st)S=Object.assign(S,st,{settings:Object.assign(S.settings,st.settings)})}
   catch(e){alert('Storage unavailable: '+e.message)}
   ensureTags();
+  migrate();
   UI.anchor=nyDate(Date.now());UI.calMonth=UI.anchor.slice(0,7);UI.perfYear=+UI.anchor.slice(0,4);
   document.documentElement.lang=S.settings.lang==='zh'?'zh':'en';
   render({anim:true});
   if(!S.accounts.length)openAccountForm();
+  setTimeout(checkUpdate,3000);setInterval(checkUpdate,120000);
+  document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')checkUpdate()});
   let rt;window.addEventListener('resize',()=>{clearTimeout(rt);rt=setTimeout(()=>drawEquity(inPeriod(enriched())),150)});
 })();
 </script>
